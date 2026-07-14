@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="card shadow">
+
+<div class="card-header bg-success text-white">
+
+<h4>
+
+Appointments
+
+</h4>
+
+</div>
+
+<div class="card-body">
+
+<table class="table table-striped">
+
+<thead>
+
+<tr>
+
+<th>
+
+ID
+
+</th>
+
+<th>
+
+Patient
+
+</th>
+
+<th>
+
+Counselor
+
+</th>
+
+<th>
+
+Slot
+
+</th>
+
+<th>
+
+Status
+
+</th>
+
+<th>
+
+Action
+
+</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>
+
+APT001
+
+</td>
+
+<td>
+
+John Tan
+
+</td>
+
+<td>
+
+Dr. Sarah
+
+</td>
+
+<td>
+
+10 July 10AM
+
+</td>
+
+<td>
+
+<span class="badge bg-success">
+
+Booked
+
+</span>
+
+</td>
+
+<td>
+
+<button type="button" class="btn btn-danger btn-sm rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#cancelModal" onclick="prepareCancelModal('APT001')">
+    Cancel Appointment
+</button>
+
+<div class="modal fade" id="cancelModal" tabindex="-1" aria-labelledby="cancelModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            
+            <form id="cancelForm" method="POST" action="">
+                <div class="modal-header bg-danger bg-opacity-10 text-danger border-0">
+                    <h5 class="modal-title fw-bold" id="cancelModalLabel">Confirm Cancellation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                
+                <div class="modal-body p-4">
+                    <p class="mb-3">Are you sure you want to cancel this appointment? This action cannot be undone.</p>
+                    
+                    <div class="mb-3">
+                        <label for="cancelReason" class="form-label fw-bold">Reason for cancellation</label>
+                        <textarea class="form-control" id="cancelReason" name="reason" rows="3" placeholder="Please let us know why you need to cancel..." required></textarea>
+                    </div>
+                </div>
+                
+                <div class="modal-footer border-0 bg-light">
+                    <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Keep Appointment</button>
+                    <button type="submit" class="btn btn-danger rounded-pill px-4">Confirm Cancellation</button>
+                </div>
+            </form>
+            
+        </div>
+    </div>
+</div>
+
+<script>
+    function prepareCancelModal(appointmentId) {
+        // Update the form's action URL to target the specific appointment
+        document.getElementById('cancelForm').action = '/cancel/' + appointmentId;
+        
+        // Clear any previous text in the textarea if the modal was opened and closed previously
+        document.getElementById('cancelReason').value = '';
+    }
+</script>
+
+</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+</div>
+
+</div>
+
+{% endblock %}
