@@ -74,3 +74,7 @@ def cancel_route(appointment_id):
     cancel_appointment(appointment_id, reason)
 
     return redirect(url_for("appointments"))
+
+
+if __name__ == "__main__":
+    app.run(debug=True, host="0.0.0.0", port=5000)
