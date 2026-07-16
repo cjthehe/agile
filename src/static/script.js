@@ -17,12 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 
-    localStorage.setItem('session_id', data.session_id);
-    window.location.href = '/home';
-  } catch (error) {
-    messageBox.textContent = 'Login failed';
-  }
-}
+
 
 async function registerUser() {
   const name = document.getElementById('registerName').value;

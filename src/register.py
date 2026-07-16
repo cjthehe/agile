@@ -2,7 +2,7 @@ import re
 
 from flask import Blueprint, jsonify, render_template, request
 
-from auth import patients
+from auth import fallback_patients
 from database import supabase
 
 register = Blueprint("register", __name__)
@@ -60,7 +60,7 @@ def register_user():
     if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email):
         return jsonify({"message": "Please enter a valid email address"}), 400
 
-    if email in patients:
+    if email in fallback_patients:
         return jsonify({"message": "Email already registered"}), 409
 
     if supabase is not None:
@@ -75,7 +75,7 @@ def register_user():
         except Exception:
             pass
 
-    patients[email] = {
+    fallback_patients[email] = {
         "password": password,
         "name": name,
     }

@@ -8,9 +8,9 @@ try:
 
     HAS_SUPABASE = True
 except (ImportError, ValueError, RuntimeError):
+    supabase = None
     HAS_SUPABASE = False
 
-from database import supabase
 
 auth = Blueprint("auth", __name__)
 
@@ -68,7 +68,7 @@ def login():
             user = None
 
     if user is None:
-        local_user = patients.get(email)
+        local_user = fallback_patients.get(email)
         if local_user is None:
             return jsonify({"message": "Invalid email or password"}), 401
         if local_user["password"] != password:
