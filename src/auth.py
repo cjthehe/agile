@@ -8,7 +8,9 @@ try:
 
     HAS_SUPABASE = True
 except (ImportError, ValueError, RuntimeError):
+    supabase = None
     HAS_SUPABASE = False
+
 
 auth = Blueprint("auth", __name__)
 
@@ -47,42 +49,33 @@ def login():
     email = login_data.get("email")
     password = login_data.get("password")
 
-    if HAS_SUPABASE:
+    if not email or not password:
+        return jsonify({"message": "Email and password are required"}), 400
+
+    user = None
+
+    if supabase is not None:
         try:
-            # Query the user from your database
-            response = supabase.table("user").select("*").eq("email", email).execute()
-            user_records = response.data
+            response = (
+                supabase.table("user")
+                .select("email, password, username")
+                .eq("email", email)
+                .execute()
+            )
+            if response.data:
+                user = response.data[0]
+        except Exception:
+            user = None
 
-            if user_records:
-                db_user = user_records[0]
-                # Validate password (Note: Use hashed password comparison in production)
-                if db_user.get("password") != password:
-                    return jsonify({"message": "Invalid email or password"}), 401
+    if user is None:
+        local_user = fallback_patients.get(email)
+        if local_user is None:
+            return jsonify({"message": "Invalid email or password"}), 401
+        if local_user["password"] != password:
+            return jsonify({"message": "Invalid email or password"}), 401
+        user = {"email": email, "password": password, "name": local_user["name"]}
 
-                session_id = str(uuid4())
-
-                # Save session to Flask's secure cookie session (used by wellbeing tracking)
-                session["user_id"] = db_user["id"]
-                session["session_id"] = session_id
-
-                return jsonify(
-                    {
-                        "message": "Login successful",
-                        "session_id": session_id,
-                        "user": {
-                            "id": db_user["id"],
-                            "email": db_user["email"],
-                            "username": db_user.get("username"),
-                        },
-                    }
-                )
-        except Exception as e:
-            print(f"Supabase auth error: {e}")
-            # Fallback to local memory if database query encounters an unexpected error
-            pass
-
-    # --- FALLBACK MECHANISM (For pytest unit tests) ---
-    if email not in fallback_patients or fallback_patients[email]["password"] != password:
+    if user.get("password") != password:
         return jsonify({"message": "Invalid email or password"}), 401
 
     session_id = str(uuid4())
