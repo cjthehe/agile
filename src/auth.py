@@ -2,6 +2,8 @@ from uuid import uuid4
 
 from flask import Blueprint, jsonify, redirect, render_template, request, url_for
 
+from database import supabase
+
 auth = Blueprint("auth", __name__)
 
 patients = {
@@ -40,10 +42,33 @@ def login():
     email = login_data.get("email")
     password = login_data.get("password")
 
-    if email not in patients:
-        return jsonify({"message": "Invalid email or password"}), 401
+    if not email or not password:
+        return jsonify({"message": "Email and password are required"}), 400
 
-    if patients[email]["password"] != password:
+    user = None
+
+    if supabase is not None:
+        try:
+            response = (
+                supabase.table("user")
+                .select("email, password, username")
+                .eq("email", email)
+                .execute()
+            )
+            if response.data:
+                user = response.data[0]
+        except Exception:
+            user = None
+
+    if user is None:
+        local_user = patients.get(email)
+        if local_user is None:
+            return jsonify({"message": "Invalid email or password"}), 401
+        if local_user["password"] != password:
+            return jsonify({"message": "Invalid email or password"}), 401
+        user = {"email": email, "password": password, "name": local_user["name"]}
+
+    if user.get("password") != password:
         return jsonify({"message": "Invalid email or password"}), 401
 
     session_id = str(uuid4())
