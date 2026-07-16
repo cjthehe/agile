@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="card shadow">
+
+    <div class="card-body">
+
+        <h2 class="text-center mb-4">Patient Login</h2>
+
+        <input
+            type="email"
+            id="email"
+            class="form-control mb-3"
+            placeholder="Email">
+
+        <input
+            type="password"
+            id="password"
+            class="form-control mb-3"
+            placeholder="Password">
+
+        <button
+            class="btn btn-primary w-100"
+            onclick="login()">
+            Login
+        </button>
+
+        <p
+            id="message"
+            class="text-danger mt-3 text-center">
+        </p>
+
+        <script src="/static/script.js"></script>
+
+    </div>
+
+</div>
+
+{% endblock %}
