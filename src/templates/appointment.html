@@ -42,7 +42,13 @@ Counselor
 
 <th>
 
-Slot
+Date
+
+</th>
+
+<th>
+
+Time
 
 </th>
 
@@ -63,92 +69,66 @@ Action
 </thead>
 
 <tbody>
-
+{% for appointment in appointments %}
 <tr>
 
-<td>
+    <td>
+    {{ loop.index }}
+    </td>
 
-APT001
+    <td>
+        {{ appointment.user.username }}
+    </td>
 
-</td>
+    <td>
+        {{ appointment.therapist.name }}
+    </td>
 
-<td>
+    <td>
+    {{ appointment.date_time[:10] }}
+    </td>
 
-John Tan
+    <td>
+    {{ appointment.date_time[11:16] }}
+    </td>
 
-</td>
+    <td>
+        {% if appointment.status == "Booked" %}
+            <span class="badge bg-success">
+                {{ appointment.status }}
+            </span>
+        {% elif appointment.status == "Completed" %}
+            <span class="badge bg-primary">
+                {{ appointment.status }}
+            </span>
+        {% elif appointment.status == "Cancelled" %}
+            <span class="badge bg-danger">
+                {{ appointment.status }}
+            </span>
+        {% else %}
+            <span class="badge bg-secondary">
+                {{ appointment.status }}
+            </span>
+        {% endif %}
+    </td>
 
-<td>
-
-Dr. Sarah
-
-</td>
-
-<td>
-
-10 July 10AM
-
-</td>
-
-<td>
-
-<span class="badge bg-success">
-
-Booked
-
-</span>
-
-</td>
-
-<td>
-
-<button type="button" class="btn btn-danger btn-sm rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#cancelModal" onclick="prepareCancelModal('APT001')">
-    Cancel Appointment
-</button>
-
-<div class="modal fade" id="cancelModal" tabindex="-1" aria-labelledby="cancelModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
-            
-            <form id="cancelForm" method="POST" action="">
-                <div class="modal-header bg-danger bg-opacity-10 text-danger border-0">
-                    <h5 class="modal-title fw-bold" id="cancelModalLabel">Confirm Cancellation</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                
-                <div class="modal-body p-4">
-                    <p class="mb-3">Are you sure you want to cancel this appointment? This action cannot be undone.</p>
-                    
-                    <div class="mb-3">
-                        <label for="cancelReason" class="form-label fw-bold">Reason for cancellation</label>
-                        <textarea class="form-control" id="cancelReason" name="reason" rows="3" placeholder="Please let us know why you need to cancel..." required></textarea>
-                    </div>
-                </div>
-                
-                <div class="modal-footer border-0 bg-light">
-                    <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Keep Appointment</button>
-                    <button type="submit" class="btn btn-danger rounded-pill px-4">Confirm Cancellation</button>
-                </div>
-            </form>
-            
-        </div>
-    </div>
-</div>
-
-<script>
-    function prepareCancelModal(appointmentId) {
-        // Update the form's action URL to target the specific appointment
-        document.getElementById('cancelForm').action = '/cancel/' + appointmentId;
-        
-        // Clear any previous text in the textarea if the modal was opened and closed previously
-        document.getElementById('cancelReason').value = '';
-    }
-</script>
-
-</td>
+    <td>
+        {% if appointment.status == "Booked" %}
+        <button
+            type="button"
+            class="btn btn-danger btn-sm rounded-pill px-3"
+            data-bs-toggle="modal"
+            data-bs-target="#cancelModal"
+            onclick="prepareCancelModal('{{ appointment.id }}')">
+            Cancel Appointment
+        </button>
+        {% else %}
+        -
+        {% endif %}
+    </td>
 
 </tr>
-
+{% endfor %}
 </tbody>
 
 </table>
