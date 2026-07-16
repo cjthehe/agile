@@ -6,10 +6,12 @@ from appointment_booking import (
 )
 from auth import auth as auth_blueprint
 from dummy_data import counselors
+from wellbeing_tracking import wellbeing_bp
 
 app = Flask(__name__)
 app.secret_key = "your_secret_key"  # Required for flash messages
 app.register_blueprint(auth_blueprint)
+app.register_blueprint(wellbeing_bp)
 
 
 @app.route("/")
@@ -72,3 +74,7 @@ def cancel_route(appointment_id):
     cancel_appointment(appointment_id, reason)
 
     return redirect(url_for("appointments"))
+
+
+if __name__ == "__main__":
+    app.run(debug=True, host="0.0.0.0", port=5000)
