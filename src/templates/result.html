@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    /* Retained Base Styles */
+    :root {
+        --primary-color: #0D6EFD; /* Unified dynamic blue color */
+        --primary-hover: #0b5ed7;
+        --bg-card: #FFFFFF;
+        --text-main: #1E293B;
+        --text-muted: #64748B;
+        --border-color: #E2E8F0;
+        --radius-lg: 16px;
+        --radius-md: 12px;
+        --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+    }
+    
+    .navbar {
+        background-color: var(--primary-color) !important;
+    }
+
+    body {
+        background-color: #F0F4F9 !important; 
+    }
+    
+    .wellbeing-page {
+        max-width: 600px;
+        margin: 60px auto;
+        padding: 0 20px;
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    .page-header {
+        text-align: center;
+        margin-bottom: 32px;
+    }
+    .page-header h2 {
+        font-size: 2.25rem;
+        font-weight: 800;
+        color: var(--text-main);
+        letter-spacing: -0.025em;
+        margin-bottom: 8px;
+    }
+    .page-header p.text-secondary {
+        color: var(--text-muted) !important;
+        font-size: 1.05rem;
+        margin: 0;
+    }
+
+    .wellbeing-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-lg) !important;
+        padding: 32px !important;
+        box-shadow: var(--shadow-md);
+    }
+
+    .result-box {
+        background: linear-gradient(135deg, #F8FAFC 0%, #F5F9FF 100%);
+        border: 1px solid #E2E8F0;
+        padding: 24px;
+        border-radius: var(--radius-md);
+        margin-bottom: 28px !important;
+        position: relative;
+        overflow: hidden;
+        box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.02);
+    }
+    
+    .result-box h4 {
+        font-size: 1.75rem;
+        font-weight: 800;
+        color: var(--primary-color);
+        margin-top: 0;
+        margin-bottom: 16px;
+        letter-spacing: -0.02em;
+    }
+    .result-box p {
+        font-size: 1.05rem;
+        color: #334155;
+        margin-top: 0;
+        margin-bottom: 12px;
+        line-height: 1.6;
+    }
+    .result-box p strong {
+        color: #0F172A;
+        background: rgba(13, 110, 253, 0.08); /* Clean blue badge background highlight */
+        padding: 4px 12px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.95rem;
+        margin-left: 4px;
+        display: inline-block;
+        border: 1px solid rgba(13, 110, 253, 0.15);
+    }
+    .result-box small.text-muted {
+        display: block;
+        color: #94A3B8 !important;
+        font-size: 0.85rem;
+        margin-top: 20px;
+        font-weight: 500;
+    }
+
+    /* ACTION BUTTON ROW */
+    .button-row {
+        display: flex;
+        flex-direction: column; /* Stack vertically for a cleaner, prioritized flow */
+        gap: 12px;
+        justify-content: stretch;
+    }
+    .button-row-secondary {
+        display: flex;
+        gap: 12px;
+        width: 100%;
+    }
+    .button-row .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 14px 24px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        border-radius: var(--radius-md);
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        text-decoration: none;
+        box-sizing: border-box;
+    }
+    
+    .btn-primary {
+        background-color: var(--primary-color) !important;
+        border: 1px solid var(--primary-color) !important;
+        color: #FFFFFF !important;
+        box-shadow: 0 4px 10px rgba(13, 110, 253, 0.2);
+        width: 100%;
+    }
+    .btn-primary:hover {
+        background-color: var(--primary-hover) !important;
+        border-color: var(--primary-hover) !important;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 14px rgba(13, 110, 253, 0.3);
+    }
+    .btn-outline-secondary {
+        flex: 1;
+        background: transparent;
+        color: var(--text-main) !important;
+        border: 1px solid var(--border-color);
+    }
+    .btn-outline-secondary:hover {
+        background: #F8FAFC;
+        border-color: #CBD5E1;
+        transform: translateY(-1px);
+    }
+
+    @media (max-width: 480px) {
+        .button-row-secondary {
+            flex-direction: column;
+            gap: 10px;
+        }
+        .wellbeing-card {
+            padding: 20px !important;
+        }
+    }
+</style>
+
+<div class="wellbeing-page">
+    <div class="page-header mb-4">
+        <h2>Assessment Result</h2>
+        <p class="text-secondary">Review your score and suggestions for the next step.</p>
+    </div>
+
+    <div class="card wellbeing-card p-4">
+        <div class="result-box mb-4">
+            <h4 class="mb-2">Score: {{ result.score }}</h4>
+            <p class="mb-2">Category: <strong>{{ result.category }}</strong></p>
+            <p class="mb-2">{{ result.recommendation }}</p>
+            <small class="text-muted">{{ result.datetime }}</small>
+        </div>
+
+        <div class="button-row">
+            <a class="btn btn-primary" href="/wellbeing">💾 Save Result</a>
+            
+            <div class="button-row-secondary">
+                <a class="btn btn-outline-secondary" href="/questionnaire">Take Assessment</a>
+                <a class="btn btn-outline-secondary" href="/">Back to Home</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
