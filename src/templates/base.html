@@ -21,13 +21,18 @@
 
 <nav class="navbar navbar-dark bg-primary">
 
-    <div class="container">
+    <div class="container d-flex justify-content-between align-items-center">
 
         <span class="navbar-brand mb-0 h1">
 
             🏥 MindCare Clinic Management System
 
         </span>
+
+        <div>
+            <a id="loginLink" class="btn btn-outline-light btn-sm me-2" href="/login">Login</a>
+            <button id="logoutButton" class="btn btn-light btn-sm d-none">Logout</button>
+        </div>
 
     </div>
 
@@ -41,6 +46,7 @@
 
 </div>
 
+<script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 
 </html>
