@@ -52,12 +52,14 @@ def book():
 # APPOINTMENT LIST
 @app.route("/appointments")
 def appointments():
+    appointments = get_all_appointments(13)
+
+    print(appointments)
 
     return render_template(
         "appointment.html",
-        appointments=get_all_appointments(),
+        appointments=appointments,
     )
-
 
 # CANCEL APPOINTMENT
 @app.route("/cancel/<int:appointment_id>", methods=["POST"])

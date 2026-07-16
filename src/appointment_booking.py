@@ -1,5 +1,5 @@
 from datetime import datetime
-
+from database import supabase
 from dummy_data import appointments, counselors
 
 
@@ -70,9 +70,23 @@ def create_appointment(patient_name, counselor_id, slot):
 
     return appointment
 
+def get_all_appointments(user_id):
+    response = (
+        supabase.table("appointment")
+        .select("""
+            id,
+            date_time,
+            appointment_type,
+            status,
+            user(username),
+            therapist(name)
+        """)
+        .eq("user_id", user_id)
+        .execute()
+    )
 
-def get_all_appointments():
-    return appointments
+    return response.data
+
 
 
 def cancel_appointment(appointment_id, reason):
