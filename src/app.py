@@ -63,6 +63,7 @@ def appointments():
         appointments=appointments,
     )
 
+
 # CANCEL APPOINTMENT
 @app.route("/cancel/<int:appointment_id>", methods=["POST"])
 def cancel_route(appointment_id):
