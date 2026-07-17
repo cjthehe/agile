@@ -9,6 +9,24 @@
 /* Apply colors to your design system */
 body { background-color: #faf9f6; } /* Light warm base */
 
+/* --- OVERRIDES FOR THE WELLBEING PORTAL ICON & BUTTON (MATCHA THEME) --- */
+.btn-success {
+    background-color: var(--color-matcha) !important;
+    border-color: var(--color-matcha) !important;
+    color: #ffffff !important;
+}
+.btn-success:hover {
+    background-color: #87a088 !important; /* Matcha hover tint */
+    border-color: #87a088 !important;
+}
+.bg-success {
+    background-color: var(--color-mint) !important;
+}
+.text-success {
+    color: var(--color-matcha) !important;
+}
+/* ---------------------------------------------------------------------- */
+
 .btn-primary { 
     background-color: var(--color-lavender) !important; 
     border-color: var(--color-lavender) !important; 

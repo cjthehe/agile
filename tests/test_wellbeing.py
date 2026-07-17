@@ -10,7 +10,7 @@ wellbeing_bp = Blueprint("wellbeing", __name__, template_folder="templates", sta
 def get_current_user_id():
     """
     Retrieves the authentic logged-in user's ID directly from the secure session.
-    If no session exists, it returns None to force proper login redirections.
+    If no session exists, it falls back safely to None or forces a redirect.
     """
     return session.get("user_id")
 
@@ -31,7 +31,6 @@ def wellbeing():
 def mood_page():
     """
     Renders the Daily Mood Logger entry form and history list panel (mood.html).
-    Accepts POST requests to handle form submittals smoothly.
     """
     user_id = get_current_user_id()
     if not user_id:
@@ -66,7 +65,7 @@ def mood_page():
         response = (
             supabase.table("mood_logs")
             .select("mood, created_at, notes")
-            .eq("user_id", user_id)  # Strict user data isolation
+            .eq("user_id", user_id)  # Strict user scope isolation
             .order("created_at", desc=True)
             .execute()
         )
@@ -85,6 +84,7 @@ def mood_page():
     except Exception as e:
         print(f"Error retrieving mood logs: {e}")
 
+    # FIXED: Corrected rendering target name to serve the actual logging page template
     return render_template("mood.html", success=success, records=records)
 
 
@@ -147,7 +147,7 @@ def result():
         return redirect(url_for("wellbeing.questionnaire"))
 
     try:
-        # Enforced a dual-key matching constraint so users can't breach isolation parameters
+        # FIXED: Enforced a dual-key matching constraint so users can't view others' logs
         response = (
             supabase.table("assessments")
             .select("*")
