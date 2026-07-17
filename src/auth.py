@@ -1,6 +1,7 @@
 from uuid import uuid4
 
 from flask import Blueprint, jsonify, redirect, render_template, request, session, url_for
+from werkzeug.security import check_password_hash, generate_password_hash
 
 # Import your Supabase client
 try:
@@ -17,8 +18,9 @@ auth = Blueprint("auth", __name__)
 # Fallback dict for unit testing & local runs without Supabase
 fallback_patients = {
     "patient@example.com": {
-        "password": "password123",
+        "password": generate_password_hash("password123"),
         "name": "John Doe",
+        "is_verified": True,
     }
 }
 fallback_sessions: dict[str, str] = {}
@@ -58,7 +60,7 @@ def login():
         try:
             response = (
                 supabase.table("user")
-                .select("email, password, username")
+                .select("email, password, username, is_verified")
                 .eq("email", email)
                 .execute()
             )
@@ -71,12 +73,23 @@ def login():
         local_user = fallback_patients.get(email)
         if local_user is None:
             return jsonify({"message": "Invalid email or password"}), 401
-        if local_user["password"] != password:
+        stored_password = local_user["password"]
+        if not (check_password_hash(stored_password, password) or stored_password == password):
             return jsonify({"message": "Invalid email or password"}), 401
-        user = {"email": email, "password": password, "name": local_user["name"]}
-
-    if user.get("password") != password:
-        return jsonify({"message": "Invalid email or password"}), 401
+        if local_user.get("is_verified") is False:
+            return jsonify({"message": "Email not verified"}), 403
+        user = {
+            "email": email,
+            "password": stored_password,
+            "name": local_user["name"],
+            "is_verified": local_user.get("is_verified"),
+        }
+    else:
+        stored_password = user.get("password")
+        if not (check_password_hash(stored_password, password) or stored_password == password):
+            return jsonify({"message": "Invalid email or password"}), 401
+        if not user.get("is_verified"):
+            return jsonify({"message": "Email not verified"}), 403
 
     session_id = str(uuid4())
     fallback_sessions[session_id] = email

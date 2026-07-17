@@ -7,11 +7,13 @@ from appointment_booking import (
 from auth import auth as auth_blueprint
 from dummy_data import counselors
 from register import register as register_blueprint
+from admin import admin as admin_blueprint
 
 app = Flask(__name__)
 app.secret_key = "your_secret_key"  # Required for flash messages
 app.register_blueprint(auth_blueprint)
 app.register_blueprint(register_blueprint)
+app.register_blueprint(admin_blueprint)
 
 
 @app.route("/")
