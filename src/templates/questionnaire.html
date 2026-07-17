@@ -2,9 +2,8 @@
 
 {% block content %}
 <style>
-    /* Premium Theme Colors matched to your Mood Tracker Layout */
     :root {
-        --primary-color: #0D6EFD; /* Vibrant Blue matched to your theme */
+        --primary-color: #0D6EFD;
         --primary-hover: #0B5ED7;
         --form-bg: #F0F4F9;
         --card-bg: #FFFFFF;
@@ -32,7 +31,6 @@
         background-color: var(--form-bg) !important;
     }
 
-    /* Centered, narrow page layout matching overall aesthetic */
     .wellbeing-container {
         max-width: 770px;
         margin: 40px auto;
@@ -41,7 +39,6 @@
         font-family: 'Inter', system-ui, -apple-system, sans-serif;
     }
 
-    /* Clean Header Card (Removed Blue Top Border) */
     .wellbeing-page-header {
         background: var(--card-bg);
         border: 1px solid var(--border-default);
@@ -62,7 +59,6 @@
         margin: 0;
     }
 
-    /* FAILURE / ERROR BANNER STYLING */
     .assessment-error {
         padding: 18px 24px;
         background: #FEF2F2;
@@ -99,7 +95,6 @@
         to { opacity: 1; transform: translateY(0); }
     }
 
-    /* Transparent Wrapper for Cards */
     .wellbeing-card.main-form-panel {
         background: transparent;
         border: none;
@@ -112,7 +107,6 @@
         gap: 12px;
     }
 
-    /* Question Box */
     .question-card {
         background: var(--card-bg);
         border: 1px solid var(--border-default);
@@ -122,7 +116,6 @@
         margin-bottom: 0;
         transition: border-color 0.2s;
     }
-    /* Dynamic styling context to visually alert uncompleted items */
     .question-card.invalid-highlight {
         border-color: #FCA5A5;
         background-color: #FFFDFD;
@@ -137,7 +130,6 @@
         line-height: 1.5;
     }
 
-    /* Vertical Choice Layout */
     .assessment-options-grid {
         display: flex;
         flex-direction: column;
@@ -145,7 +137,6 @@
         gap: 8px;
     }
 
-    /* Custom Radio-Button Style Triggers */
     .option-btn {
         background: transparent;
         border: 1px solid var(--border-default);
@@ -190,7 +181,6 @@
         box-shadow: inset 0 0 0 4px var(--card-bg);
     }
 
-    /* Footer Action Row */
     .form-actions {
         display: flex;
         justify-content: flex-end;
@@ -251,7 +241,6 @@
         <p>Answer these quick reflections to check in on your emotional wellness today.</p>
     </header>
 
-    <!-- VALIDATION ERROR BANNER (HIDDEN BY DEFAULT) -->
     <div class="assessment-error" id="assessmentErrorBanner" style="display: none;">
         <span>⚠️ Please complete all questions before saving your assessment!</span>
         <button type="button" class="error-close-btn" onclick="dismissErrorBanner()">&times;</button>
@@ -316,7 +305,7 @@
 
             <!-- Footer Action Buttons -->
             <div class="form-actions">
-                <a class="btn-back-home" href="/">Back to Home</a>
+                <a class="btn-back-home" href="/wellbeing">Back to Wellbeing Tracking</a>
                 <button type="submit" class="btn btn-primary btn-submit-assessment">Save Assessment</button>
             </div>
         </form>
@@ -324,7 +313,6 @@
 </div>
 
 <script>
-    // Handle Interactive Option Button Clicks
     document.querySelectorAll('.question-card').forEach(card => {
         const buttons = card.querySelectorAll('.option-btn');
         const hiddenInput = card.querySelector('input[type="hidden"]');
@@ -334,13 +322,11 @@
                 this.classList.add('active');
                 hiddenInput.value = this.dataset.value;
                 
-                // Clear validation warning highlights for this card once answered
                 card.classList.remove('invalid-highlight');
             });
         });
     });
 
-    // Form submission validation logic
     document.getElementById('assessmentForm').addEventListener('submit', function(event) {
         let formIsValid = true;
         const hiddenInputs = this.querySelectorAll('input[type="hidden"]');
@@ -348,26 +334,23 @@
 
         hiddenInputs.forEach(input => {
             const parentCard = input.closest('.question-card');
-            // If any value is missing or completely empty
             if (!input.value.trim()) {
                 formIsValid = false;
                 if (parentCard) {
-                    parentCard.classList.add('invalid-highlight'); // Turn card borders reddish
+                    parentCard.classList.add('invalid-highlight'); 
                 }
             }
         });
 
-        // If something is unselected, trigger the failure loop
         if (!formIsValid) {
-            event.preventDefault(); // Stop form submission
+            event.preventDefault(); 
             if (errorBanner) {
-                errorBanner.style.display = 'flex'; // Reveal the warning panel
-                window.scrollTo({ top: 0, behavior: 'smooth' }); // Pin visual view to top warning
+                errorBanner.style.display = 'flex'; 
+                window.scrollTo({ top: 0, behavior: 'smooth' }); 
             }
         }
     });
 
-    // Action function to manually clear banner out
     function dismissErrorBanner() {
         const banner = document.getElementById('assessmentErrorBanner');
         if (banner) banner.style.display = 'none';

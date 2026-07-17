@@ -2,7 +2,6 @@ from uuid import uuid4
 
 from flask import Blueprint, jsonify, redirect, render_template, request, session, url_for
 
-# Import your Supabase client
 try:
     from database import supabase
 
@@ -11,17 +10,17 @@ except (ImportError, ValueError, RuntimeError):
     supabase = None
     HAS_SUPABASE = False
 
-
 auth = Blueprint("auth", __name__)
 
-# Fallback dict for unit testing & local runs without Supabase
+# Fallback simulation dictionary containing explicit internal IDs
 fallback_patients = {
     "patient@example.com": {
+        "id": "fallback-user-doe-123",  # Dynamic ID added to prevent hardcoded defaults
         "password": "password123",
         "name": "John Doe",
     }
 }
-fallback_sessions: dict[str, str] = {}
+fallback_sessions = {}
 
 
 @auth.route("/welcome")
@@ -46,19 +45,24 @@ def login():
     if not login_data:
         return jsonify({"message": "Request body is required"}), 400
 
-    email = login_data.get("email")
-    password = login_data.get("password")
+    email = login_data.get("email", "")
+    password = login_data.get("password", "")
 
     if not email or not password:
         return jsonify({"message": "Email and password are required"}), 400
 
+    email_valid = "@" in email and "." in email
+    if not email_valid:
+        return jsonify({"message": "Invalid email"}), 401
+
     user = None
 
+    # 1. Attempt dynamic authentic login via Supabase
     if supabase is not None:
         try:
             response = (
                 supabase.table("user")
-                .select("email, password, username")
+                .select("id, email, password, username")  # Explicitly pulling the dynamic DB "id"
                 .eq("email", email)
                 .execute()
             )
@@ -67,20 +71,32 @@ def login():
         except Exception:
             user = None
 
+    # 2. Fall back to local verification if Supabase is offline or row isn't found
     if user is None:
         local_user = fallback_patients.get(email)
         if local_user is None:
-            return jsonify({"message": "Invalid email or password"}), 401
+            return jsonify({"message": "Invalid email"}), 401
         if local_user["password"] != password:
-            return jsonify({"message": "Invalid email or password"}), 401
-        user = {"email": email, "password": password, "name": local_user["name"]}
+            return jsonify({"message": "Invalid password"}), 401
 
+        # Populate dynamic internal attributes safely
+        user = {
+            "id": local_user["id"],
+            "email": email,
+            "password": password,
+            "name": local_user["name"],
+        }
+
+    # Final security check block
     if user.get("password") != password:
-        return jsonify({"message": "Invalid email or password"}), 401
+        return jsonify({"message": "Invalid password"}), 401
 
     session_id = str(uuid4())
     fallback_sessions[session_id] = email
-    session["user_id"] = 1  # Standard mock user ID
+
+    # DYNAMIC FIX: Stores the individual user's structural primary key inside the session container.
+    # This feeds directly into get_current_user_id() in the wellbeing module.
+    session["user_id"] = user.get("id")
     session["session_id"] = session_id
 
     return jsonify(
@@ -99,12 +115,9 @@ def logout():
 
     session_id = logout_data.get("session_id")
 
-    # Clear active Flask session cookie data
     session.pop("user_id", None)
     session.pop("session_id", None)
 
-    # In a production stateless API environment, you might also have a 'sessions' table,
-    # but here we clear our local test fallbacks.
     if not HAS_SUPABASE:
         if session_id in fallback_sessions:
             del fallback_sessions[session_id]

@@ -1,79 +1,74 @@
-// --- RUNS ON EVERY PAGE LOAD ---
-document.addEventListener("DOMContentLoaded", () => {
-    const loginLink = document.getElementById("loginLink");
-    const logoutButton = document.getElementById("logoutButton");
-    
-    // Check if user session exists in browser storage
-    const sessionId = localStorage.getItem("session_id");
+// Centralized state manager for synchronization of Navbar controls
+function updateAuthButtons() {
+    const sessionId = localStorage.getItem('session_id');
+    const loginLink = document.getElementById('loginLink');
+    const logoutButton = document.getElementById('logoutButton');
+
+    if (!loginLink || !logoutButton) {
+        return;
+    }
 
     if (sessionId) {
-        // User is logged in: Show logout, hide login (SCRUM-263)
-        if (loginLink) loginLink.classList.add("d-none");
-        if (logoutButton) logoutButton.classList.remove("d-none");
+        loginLink.classList.add('d-none');
+        logoutButton.classList.remove('d-none');
     } else {
-        // User is logged out: Show login, hide logout
-        if (loginLink) loginLink.classList.remove("d-none");
-        if (logoutButton) logoutButton.classList.add("d-none");
+        loginLink.classList.remove('d-none');
+        logoutButton.classList.add('d-none');
     }
+}
+
+// Global initialization logic block run on page boot
+document.addEventListener("DOMContentLoaded", () => {
+    updateAuthButtons();
 });
 
-
-
+// User registration interface submission routine
 async function registerUser() {
-  const name = document.getElementById('registerName').value;
-  const email = document.getElementById('registerEmail').value;
-  const password = document.getElementById('registerPassword').value;
-  const confirmPassword = document.getElementById('registerConfirmPassword').value;
-  const messageBox = document.getElementById('registerMessage');
+    const name = document.getElementById('registerName').value;
+    const email = document.getElementById('registerEmail').value;
+    const password = document.getElementById('registerPassword').value;
+    const confirmPassword = document.getElementById('registerConfirmPassword').value;
+    const messageBox = document.getElementById('registerMessage');
 
-  try {
-    const response = await fetch('/api/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, password, confirmPassword })
-    });
+    if (!messageBox) return;
 
-    const data = await response.json();
+    try {
+        const response = await fetch('/api/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, email, password, confirmPassword })
+        });
 
-    if (!response.ok) {
-      messageBox.textContent = data.message || 'Registration failed';
-      messageBox.className = 'text-danger mt-3 text-center';
-      return;
+        const data = await response.json();
+
+        if (!response.ok) {
+            messageBox.textContent = data.message || 'Registration failed';
+            messageBox.className = 'text-danger mt-3 text-center';
+            return;
+        }
+
+        messageBox.textContent = `Registration successful. Welcome, ${data.user.name}!`;
+        messageBox.className = 'text-success mt-3 text-center';
+        
+        const regForm = document.getElementById('registerForm');
+        if (regForm) regForm.reset();
+    } catch (error) {
+        console.error("Error during registration:", error);
+        messageBox.textContent = 'Registration failed';
+        messageBox.className = 'text-danger mt-3 text-center';
     }
-
-    messageBox.textContent = `Registration successful. Welcome, ${data.user.name}!`;
-    messageBox.className = 'text-success mt-3 text-center';
-    document.getElementById('registerForm').reset();
-  } catch (error) {
-    messageBox.textContent = 'Registration failed';
-    messageBox.className = 'text-danger mt-3 text-center';
-  }
 }
 
-function updateAuthButtons() {
-  const sessionId = localStorage.getItem('session_id');
-  const loginLink = document.getElementById('loginLink');
-  const logoutButton = document.getElementById('logoutButton');
-
-  if (!loginLink || !logoutButton) {
-    return;
-  }
-
-  if (sessionId) {
-    loginLink.classList.add('d-none');
-    logoutButton.classList.remove('d-none');
-  } else {
-    loginLink.classList.remove('d-none');
-    logoutButton.classList.add('d-none');
-  }
-}
-
+// User access validation login routine
 async function login() {
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
     const messageElement = document.getElementById("message");
 
+    if (!messageElement) return;
+
     messageElement.innerText = "";
+    messageElement.className = "mt-3 text-center text-danger";
 
     if (!email || !password) {
         messageElement.innerText = "Please enter both email and password.";
@@ -90,9 +85,12 @@ async function login() {
         const data = await response.json();
 
         if (response.ok) {
-            // Store token & redirect to home
             localStorage.setItem("session_id", data.session_id);
-            window.location.href = "/home";
+            alert(data.message || "Login Successful!");
+            
+            // REDIRECTION FIX: Directs your successfully validated users 
+            // directly onto the active hub instead of a generic home placeholder
+            window.location.href = "/wellbeing";
         } else {
             messageElement.innerText = data.message || "Login failed. Please try again.";
         }
@@ -102,32 +100,20 @@ async function login() {
     }
 }
 
-// --- LOGOUT FLOW (SCRUM-264 to SCRUM-268) ---
+// Clears user sessions and handles secure logging out
 async function logoutUser() {
-    const sessionId = localStorage.getItem("session_id"); // Detect request (SCRUM-264)
+    const sessionId = localStorage.getItem("session_id"); 
 
     try {
-        // Call Flask API to kill server-side session (SCRUM-265)
-        const response = await fetch("/api/logout", {
+        await fetch("/api/logout", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ session_id: sessionId })
         });
-
-        if (response.ok) {
-            // Clear local security token (SCRUM-266)
-            localStorage.removeItem("session_id");
-            // Display logout confirmation (SCRUM-268)
-            alert("You have successfully logged out!");
-            // Redirect user to login page (SCRUM-267)
-            window.location.href = "/login";
-        } else {
-            // Force logout client-side fallback if server fails
-            localStorage.removeItem("session_id");
-            window.location.href = "/login";
-        }
     } catch (error) {
-        console.error("Error during logout:", error);
+        console.error("Error during server logout routing cleanup:", error);
+    } finally {
+        // Always destroy browser caching states and send users out safely
         localStorage.removeItem("session_id");
         window.location.href = "/login";
     }
