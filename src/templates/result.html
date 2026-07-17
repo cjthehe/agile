@@ -25,7 +25,7 @@
     }
     
     .wellbeing-page {
-        max-width: 600px;
+        max-width: 700px; /* Widened slightly to fit history logs gracefully */
         margin: 50px auto;
         padding: 0 20px;
         font-family: 'Inter', system-ui, -apple-system, sans-serif;
@@ -64,7 +64,6 @@
         text-align: center;
     }
     
-    /* FIXED: Changed from clashy blue to balanced neutral dark */
     .result-box h4 { 
         font-size: 2rem; 
         font-weight: 800; 
@@ -110,7 +109,104 @@
         font-weight: 500;
     }
 
-    /* ACTION BUTTON ROW */
+    /* --- TIMELINE HISTORY COMPONENT --- */
+    .history-divider {
+        border-top: 2px dashed rgba(166, 161, 190, 0.3);
+        margin: 32px 0 24px 0;
+    }
+
+    .history-header {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--text-main);
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .history-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        max-height: 320px;
+        overflow-y: auto;
+        padding-right: 4px;
+    }
+
+    /* Custom Scrollbar styling for a premium look */
+    .history-list::-webkit-scrollbar {
+        width: 6px;
+    }
+    .history-list::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .history-list::-webkit-scrollbar-thumb {
+        background: var(--color-lavender);
+        border-radius: 10px;
+    }
+
+    .history-item {
+        background: #faf9f6;
+        border: 1px solid rgba(166, 161, 190, 0.25);
+        border-radius: var(--radius-md);
+        padding: 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: all 0.2s ease;
+    }
+
+    .history-item:hover {
+        transform: translateX(3px);
+        border-color: var(--color-matcha);
+        background-color: #f5f8f5;
+    }
+
+    .history-left {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .history-meta {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .score-badge {
+        background-color: var(--color-matcha);
+        color: #FFFFFF;
+        font-weight: 700;
+        font-size: 0.85rem;
+        padding: 3px 10px;
+        border-radius: 6px;
+    }
+
+    .category-badge {
+        background-color: var(--color-lilac);
+        color: #333333;
+        font-weight: 600;
+        font-size: 0.80rem;
+        padding: 3px 10px;
+        border-radius: 6px;
+    }
+
+    .history-time {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+    }
+
+    .history-rec {
+        font-size: 0.85rem;
+        color: #4A5568;
+        font-style: italic;
+        max-width: 250px;
+        text-align: right;
+    }
+
+    /* --- FIXED ACTION BUTTON CONTAINER --- */
     .button-row { 
         display: flex; 
         flex-direction: column; 
@@ -119,21 +215,29 @@
     }
     .button-row-secondary { 
         display: flex; 
+        justify-content: center; 
+        align-items: center;
         gap: 12px; 
         width: 100%; 
     }
     
-    .button-row .btn {
+    /* --- UNIFIED SHARED RESULTS BUTTONS --- */
+    .button-row-secondary .btn {
+        flex: 1;
+        min-width: 210px; 
+        max-width: 240px; 
+        height: 52px;     
         display: inline-flex; 
         align-items: center; 
         justify-content: center;
-        padding: 14px 24px; 
+        text-align: center;
         font-size: 0.95rem; 
         font-weight: 600;
-        border-radius: var(--radius-md); 
+        border-radius: 8px !important; 
         transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         text-decoration: none; 
         box-sizing: border-box;
+        padding: 0 16px !important;
     }
     
     .btn-primary {
@@ -141,19 +245,17 @@
         border: 1px solid var(--color-matcha) !important;
         color: #FFFFFF !important;
         box-shadow: 0 4px 12px rgba(164, 194, 165, 0.25);
-        width: 100%;
     }
     .btn-primary:hover {
-        background-color: #87a088 !important;
-        border-color: #87a088 !important;
+        background-color: var(--color-matcha-hover) !important;
+        border-color: var(--color-matcha-hover) !important;
         transform: translateY(-1px);
         box-shadow: 0 6px 16px rgba(164, 194, 165, 0.35);
     }
     .btn-outline-secondary {
-        flex: 1; 
-        background: transparent; 
+        background: var(--bg-card) !important; 
         color: #4A5568 !important;
-        border: 1px solid var(--color-lavender) !important;
+        border: 1px solid var(--border-color) !important;
     }
     .btn-outline-secondary:hover {
         background: var(--color-lilac) !important;
@@ -161,13 +263,24 @@
         transform: translateY(-1px);
     }
 
-    @media (max-width: 480px) {
+    @media (max-width: 576px) {
         .button-row-secondary { 
-            flex-direction: column; 
+            flex-direction: column-reverse; 
+            align-items: stretch;
             gap: 10px; 
         }
-        .wellbeing-card { 
-            padding: 24px 20px !important; 
+        .button-row-secondary .btn {
+            width: 100%;
+            max-width: 100%;
+        }
+        .history-item {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        .history-rec {
+            text-align: left;
+            max-width: 100%;
         }
     }
 </style>
@@ -179,6 +292,7 @@
     </div>
 
     <div class="card wellbeing-card p-4">
+        <!-- Newest score panel -->
         <div class="result-box mb-4">
             <h4>Score: {{ result.score }}</h4>
             
@@ -192,12 +306,40 @@
             <small class="text-muted">🕒 Logged on {{ result.datetime }}</small>
         </div>
 
+        <!-- Navigation Buttons -->
         <div class="button-row">
-            <a class="btn btn-primary" href="/wellbeing">💾 Save Result</a>
             <div class="button-row-secondary">
-                <a class="btn btn-outline-secondary" href="/questionnaire">Take Assessment</a>
                 <a class="btn btn-outline-secondary" href="/wellbeing">Back to Wellbeing Tracking</a>
+                <a class="btn btn-primary" href="/questionnaire">🔄 Take Assessment Again</a>
             </div>
+        </div>
+
+        <!-- Historical Log Timeline Section -->
+        <div class="history-divider"></div>
+        
+        <h5 class="history-header">
+            <span>🌿</span> Historical Assessment Logs
+        </h5>
+
+        <div class="history-list">
+            {% if history %}
+                {% for log in history %}
+                    <div class="history-item">
+                        <div class="history-left">
+                            <div class="history-meta">
+                                <span class="score-badge">Score: {{ log.score }}</span>
+                                <span class="category-badge">{{ log.category }}</span>
+                            </div>
+                            <span class="history-time">🕒 {{ log.datetime }}</span>
+                        </div>
+                        <div class="history-rec">
+                            "{{ log.recommendation }}"
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-center text-muted py-3">No past records stored yet.</p>
+            {% endif %}
         </div>
     </div>
 </div>

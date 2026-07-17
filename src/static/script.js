@@ -77,7 +77,7 @@ async function login() {
         if (response.ok) {
             // Save the session ID to local storage so the logout function can read it later
             localStorage.setItem('session_id', data.session_id);
-            // Redirect smoothly to your home dashboard dashboard
+            // Redirect smoothly to your home dashboard
             window.location.href = '/home';
         } else {
             messageEl.innerText = data.message || "Login failed.";
@@ -87,8 +87,11 @@ async function login() {
     }
 }
 
-// Handles user logout execution across the site
-async function logout() {
+// FIXED: Handles user logout execution and guarantees clean navigation redirection
+async function logout(event) {
+    // Prevent default anchor element navigational actions if triggered by one
+    if (event) event.preventDefault();
+    
     const sessionId = localStorage.getItem('session_id');
 
     try {
@@ -99,14 +102,19 @@ async function logout() {
         });
 
         if (response.ok) {
-            // Clear local tracking values 
+            // Clear local tracking values seamlessly
             localStorage.removeItem('session_id');
-            // Force return to the clean login state
+            // Force return to the clean login state page
             window.location.href = '/login';
         } else {
             console.error("Logout failed at backend layer.");
+            // Fallback redirect even if backend validation fails to protect client UX
+            localStorage.removeItem('session_id');
+            window.location.href = '/login';
         }
     } catch (err) {
         console.error("Network issue occurred executing logout API:", err);
+        localStorage.removeItem('session_id');
+        window.location.href = '/login';
     }
 }

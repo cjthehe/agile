@@ -15,6 +15,18 @@ def get_current_user_id():
     return session.get("user_id")
 
 
+def calculate_metrics(score):
+    """
+    Helper helper to consistently map a numerical score to categories and suggestions.
+    """
+    if score <= 4:
+        return "Good", "Keep maintaining your healthy lifestyle."
+    elif score <= 8:
+        return "Moderate", "Take breaks and practice relaxation."
+    else:
+        return "Needs Attention", "Consider talking with a counselor."
+
+
 @wellbeing_bp.route("/wellbeing", methods=["GET"])
 def wellbeing():
     """
@@ -136,54 +148,61 @@ def questionnaire():
 @wellbeing_bp.route("/result")
 def result():
     """
-    Renders personal feedback metrics for the user's latest assessment.
+    Renders personal feedback metrics for the user's latest assessment,
+    falling back to their overall newest record if session cache is empty.
     """
     user_id = get_current_user_id()
     if not user_id:
         return redirect(url_for("auth.login_page"))
 
-    assessment_id = session.get("latest_assessment_id")
-    if not assessment_id:
-        return redirect(url_for("wellbeing.questionnaire"))
-
     try:
-        # Enforced a dual-key matching constraint so users can't breach isolation parameters
-        response = (
+        # 1. Fetch ALL historical assessments for this user first
+        history_response = (
             supabase.table("assessments")
             .select("*")
-            .eq("id", assessment_id)
             .eq("user_id", user_id)
-            .single()
+            .order("created_at", desc=True)
             .execute()
         )
 
-        data = response.data
-        if not data:
+        # If they have absolutely no history, redirect them to take it for the first time
+        if not history_response.data:
             return redirect(url_for("wellbeing.questionnaire"))
 
-        score = data["score"]
+        history_records = []
+        for item in history_response.data:
+            hist_score = item["score"]
+            hist_cat, hist_rec = calculate_metrics(hist_score)
 
-        if score <= 4:
-            category = "Good"
-            recommendation = "Keep maintaining your healthy lifestyle."
-        elif score <= 8:
-            category = "Moderate"
-            recommendation = "Take breaks and practice relaxation."
-        else:
-            category = "Needs Attention"
-            recommendation = "Consider talking with a counselor."
+            hist_dt_parsed = datetime.fromisoformat(item["created_at"].replace("Z", "+00:00"))
+            hist_local_dt = hist_dt_parsed.astimezone()
 
-        dt_parsed = datetime.fromisoformat(data["created_at"].replace("Z", "+00:00"))
-        local_dt = dt_parsed.astimezone()
+            history_records.append(
+                {
+                    "id": item["id"],
+                    "score": hist_score,
+                    "category": hist_cat,
+                    "recommendation": hist_rec,
+                    "datetime": hist_local_dt.strftime("%d/%m/%Y %H:%M"),
+                }
+            )
 
-        latest_result = {
-            "score": score,
-            "category": category,
-            "recommendation": recommendation,
-            "datetime": local_dt.strftime("%d/%m/%Y %H:%M"),
-        }
+        # 2. Determine which assessment to highlight in the top presentation box
+        assessment_id = session.get("latest_assessment_id")
+        latest_result = None
 
-        return render_template("result.html", result=latest_result)
+        if assessment_id:
+            # If they just finished one, match it from the records
+            latest_result = next(
+                (item for item in history_records if item["id"] == assessment_id), None
+            )
+
+        # FALLBACK: If they just clicked "View Assessment History",
+        # highlight their most recent entry
+        if not latest_result and history_records:
+            latest_result = history_records[0]
+
+        return render_template("result.html", result=latest_result, history=history_records)
 
     except Exception as e:
         print(f"Error retrieving results: {e}")
