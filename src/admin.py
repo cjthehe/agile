@@ -1,7 +1,7 @@
 import re
 import secrets
 
-from flask import Blueprint, jsonify, request, render_template
+from flask import Blueprint, jsonify, render_template, request
 
 from database import supabase
 
@@ -9,8 +9,10 @@ try:
     # import shared helper to send emails (prints to console if SMTP not configured)
     from register import send_verification_email
 except Exception:
+
     def send_verification_email(email: str, code: str) -> None:
         print(f"Verification code for {email}: {code}")
+
 
 admin = Blueprint("admin", __name__)
 

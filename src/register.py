@@ -21,7 +21,9 @@ def send_verification_email(email: str, code: str, purpose: str = "verify") -> N
 
     if purpose == "counselor":
         subject = "Activate your counselor account"
-        activation_url = url_for("register.activate_account", email=email, code=code, _external=True)
+        activation_url = url_for(
+            "register.activate_account", email=email, code=code, _external=True
+        )
         body = (
             f"Hello,\n\n"
             f"You have been invited to join MindCare as a counselor.\n"
@@ -32,7 +34,9 @@ def send_verification_email(email: str, code: str, purpose: str = "verify") -> N
         )
     else:
         subject = "Verify your MindCare account"
-        activation_url = url_for("register.activate_account", email=email, code=code, _external=True)
+        activation_url = url_for(
+            "register.activate_account", email=email, code=code, _external=True
+        )
         body = (
             f"Hello,\n\n"
             f"Your MindCare verification code is: {code}\n\n"
@@ -123,9 +127,9 @@ def verify_email():
         return jsonify({"message": "Invalid verification code"}), 400
 
     try:
-        supabase.table("user").update(
-            {"is_verified": True, "verification_code": None}
-        ).eq("email", email).execute()
+        supabase.table("user").update({"is_verified": True, "verification_code": None}).eq(
+            "email", email
+        ).execute()
     except Exception:
         pass
 
@@ -230,7 +234,12 @@ def get_local_user(email: str) -> dict | None:
 def find_user(email: str) -> dict | None:
     if supabase is not None:
         try:
-            response = supabase.table("user").select("email, password, username, user_role, is_verified, verification_code").eq("email", email).execute()
+            response = (
+                supabase.table("user")
+                .select("email, password, username, user_role, is_verified, verification_code")
+                .eq("email", email)
+                .execute()
+            )
             if response.data:
                 return response.data[0]
         except Exception:
@@ -316,4 +325,3 @@ def activate_account():
 
     success = "Your counselor account has been activated. You can now log in."
     return render_template("activate.html", success=success)
-

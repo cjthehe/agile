@@ -50,10 +50,7 @@ def test_register_new_user(client):
     )
 
     assert response.status_code == 201
-    assert (
-        response.get_json()["message"]
-        == "Registration successful. Verification email sent."
-    )
+    assert response.get_json()["message"] == "Registration successful. Verification email sent."
     assert response.get_json()["user"]["email"].startswith("test_")
 
 
