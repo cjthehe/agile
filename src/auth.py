@@ -1,17 +1,18 @@
+from typing import Optional
 from uuid import uuid4
 
 from flask import Blueprint, jsonify, redirect, render_template, request, session, url_for
+from supabase import Client
 from werkzeug.security import check_password_hash, generate_password_hash
 
-# Import your Supabase client
 try:
-    from database import supabase
+    import database
 
+    supabase: Optional[Client] = database.supabase
     HAS_SUPABASE = True
 except (ImportError, ValueError, RuntimeError):
     supabase = None
     HAS_SUPABASE = False
-
 
 auth = Blueprint("auth", __name__)
 
@@ -20,6 +21,7 @@ fallback_patients = {
     "patient@example.com": {
         "password": generate_password_hash("password123"),
         "name": "John Doe",
+        "user_role": "patient",
         "is_verified": True,
     }
 }
@@ -60,7 +62,7 @@ def login():
         try:
             response = (
                 supabase.table("user")
-                .select("email, password, username, is_verified")
+                .select("email, password, username, user_role, is_verified")
                 .eq("email", email)
                 .execute()
             )
@@ -70,7 +72,13 @@ def login():
             user = None
 
     if user is None:
-        local_user = fallback_patients.get(email)
+        # Import fallback counselors lazily to avoid circular dependencies.
+        try:
+            from admin import fallback_counselors
+        except Exception:
+            fallback_counselors = {}
+
+        local_user = fallback_patients.get(email) or fallback_counselors.get(email)
         if local_user is None:
             return jsonify({"message": "Invalid email or password"}), 401
         stored_password = local_user["password"]
@@ -81,8 +89,9 @@ def login():
         user = {
             "email": email,
             "password": stored_password,
-            "name": local_user["name"],
+            "name": local_user.get("name", ""),
             "is_verified": local_user.get("is_verified"),
+            "user_role": local_user.get("user_role", "patient"),
         }
     else:
         stored_password = user.get("password")
@@ -90,16 +99,28 @@ def login():
             return jsonify({"message": "Invalid email or password"}), 401
         if not user.get("is_verified"):
             return jsonify({"message": "Email not verified"}), 403
+        user["user_role"] = user.get("user_role") or "patient"
 
     session_id = str(uuid4())
     fallback_sessions[session_id] = email
     session["user_id"] = 1  # Standard mock user ID
     session["session_id"] = session_id
 
+    role = (user.get("user_role") or "patient").strip().lower()
+
+    if role in {"admin", "administrator"}:
+        redirect_url = "/admin"
+    elif role in {"counselor", "senior_counselor"}:
+        redirect_url = "/counselor/dashboard"
+    else:
+        redirect_url = "/home"
+
     return jsonify(
         {
             "message": "Login successful",
             "session_id": session_id,
+            "user_role": role,
+            "redirect": redirect_url,
         }
     )
 

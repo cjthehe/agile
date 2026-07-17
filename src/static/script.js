@@ -15,6 +15,13 @@ document.addEventListener("DOMContentLoaded", () => {
         if (loginLink) loginLink.classList.remove("d-none");
         if (logoutButton) logoutButton.classList.add("d-none");
     }
+
+    if (logoutButton) {
+        logoutButton.addEventListener("click", async (event) => {
+            event.preventDefault();
+            await logoutUser();
+        });
+    }
 });
 
 
@@ -164,9 +171,8 @@ async function login() {
         const data = await response.json();
 
         if (response.ok) {
-            // Store token & redirect to home
             localStorage.setItem("session_id", data.session_id);
-            window.location.href = "/home";
+            window.location.href = data.redirect;
         } else {
             messageElement.innerText = data.message || "Login failed. Please try again.";
         }
@@ -208,23 +214,21 @@ async function logoutUser() {
 }
 
 async function createCounselor() {
-
-    const response = await fetch(
-        "/api/admin/create-counselor",
-        {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                name: document.getElementById("name").value,
-                email: document.getElementById("email").value,
-                user_role: document.getElementById("role").value
-            })
-        }
-    );
+    const response = await fetch("/api/admin/create-counselor", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            name: document.getElementById("name").value,
+            email: document.getElementById("email").value,
+            role: document.getElementById("role").value
+        })
+    });
 
     const data = await response.json();
+    const messageEl = document.getElementById("adminMessage");
 
-    document.getElementById("message").innerText = data.message;
+    messageEl.innerText = data.message || "Unable to create counselor.";
+    messageEl.className = response.ok ? "text-success mt-3 text-center" : "text-danger mt-3 text-center";
 }

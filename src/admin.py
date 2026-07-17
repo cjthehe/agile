@@ -1,7 +1,7 @@
 import re
 import secrets
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, render_template
 
 from database import supabase
 
@@ -18,13 +18,18 @@ admin = Blueprint("admin", __name__)
 fallback_counselors: dict[str, dict] = {}
 
 
+@admin.route("/admin", methods=["GET"])
+def admin_page():
+    return render_template("admin.html")
+
+
 @admin.route("/api/admin/create-counselor", methods=["POST"])
 def create_counselor():
     payload = request.get_json(silent=True) or {}
 
     name = (payload.get("name") or "").strip()
     email = (payload.get("email") or "").strip().lower()
-    role = (payload.get("user_role") or "counselor").strip()
+    role = (payload.get("user_role") or payload.get("role") or "counselor").strip()
 
     if not name or not email or not role:
         return jsonify({"message": "Name, email and role are required"}), 400
@@ -72,7 +77,7 @@ def create_counselor():
     }
 
     # notify counselor (prints to console if SMTP not configured)
-    send_verification_email(email, activation_code)
+    send_verification_email(email, activation_code, purpose="counselor")
 
     return (
         jsonify(
