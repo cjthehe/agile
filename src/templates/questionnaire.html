@@ -2,31 +2,25 @@
 
 {% block content %}
 <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
     :root {
-        --primary-color: #0D6EFD;
-        --primary-hover: #0B5ED7;
-        --form-bg: #F0F4F9;
+        --color-oat: #E8DCC4;
+        --color-matcha: #A4C2A5;
+        --color-matcha-hover: #87a088;
+        --color-lavender: #A6A1BE;
+        --color-lilac: #DCD0E4;
+
+        --form-bg: #faf9f6;
         --card-bg: #FFFFFF;
-        --text-primary: #202124;
+        --text-primary: #2D3748;
         --text-secondary: #5F6368;
-        --border-default: #DADCE0;
+        --border-default: var(--color-lavender);
+        --radius-lg: 16px;
+        --radius-md: 12px;
+        --shadow-md: 0 10px 25px -5px rgba(166, 161, 190, 0.15);
     }
     
-    .navbar {
-        background-color: var(--primary-color) !important;
-    }
-    .btn-primary {
-        background-color: var(--primary-color) !important;
-        border-color: var(--primary-color) !important;
-    }
-    .btn-primary:hover {
-        background-color: var(--primary-hover) !important;
-        border-color: var(--primary-hover) !important;
-    }
-    .card {
-        border-radius: 12px;
-    }
-
     body {
         background-color: var(--form-bg) !important;
     }
@@ -42,196 +36,158 @@
     .wellbeing-page-header {
         background: var(--card-bg);
         border: 1px solid var(--border-default);
-        border-radius: 8px;
+        border-radius: var(--radius-md);
         padding: 24px;
-        margin-bottom: 12px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 12px rgba(166, 161, 190, 0.05);
     }
     .wellbeing-page-header h1 {
-        font-size: 2rem;
-        font-weight: 700;
-        color: var(--text-primary);
+        font-size: 2rem; 
+        font-weight: 700; 
+        color: var(--text-primary); 
         margin: 0 0 8px 0;
-        line-height: 1.35;
+        letter-spacing: -0.02em;
     }
-    .wellbeing-page-header p {
-        color: var(--text-secondary);
-        font-size: 0.95rem;
-        margin: 0;
+    .wellbeing-page-header p { 
+        color: var(--text-secondary); 
+        font-size: 0.95rem; 
+        margin: 0; 
     }
 
     .assessment-error {
-        padding: 18px 24px;
-        background: #FEF2F2;
-        color: #991B1B;
-        border-radius: 8px;
-        margin-bottom: 20px;
-        font-weight: 600;
-        font-size: 0.975rem;
+        padding: 18px 24px; 
+        background: #FEF2F2; 
+        color: #991B1B; 
+        border-radius: var(--radius-md);
+        margin-bottom: 20px; 
+        font-weight: 600; 
+        font-size: 0.975rem; 
         border: 1px solid #FCA5A5;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-        animation: fadeIn 0.3s ease;
-    }
-    .error-close-btn {
-        background: transparent;
-        border: none;
-        color: #B91C1C;
-        font-size: 1.25rem;
-        cursor: pointer;
-        line-height: 1;
-        padding: 0 4px;
-        font-weight: 700;
-        transition: color 0.15s ease;
-    }
-    .error-close-btn:hover {
-        color: #7F1D1D;
-    }
-
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(-10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
-    .wellbeing-card.main-form-panel {
-        background: transparent;
-        border: none;
-        padding: 0;
-        box-shadow: none;
-    }
-    .wellbeing-form {
-        display: flex;
-        flex-direction: column;
+        display: flex; 
+        align-items: center; 
+        justify-content: space-between; 
         gap: 12px;
     }
 
     .question-card {
-        background: var(--card-bg);
+        background: var(--card-bg); 
         border: 1px solid var(--border-default);
-        border-radius: 8px;
-        padding: 24px;
-        box-shadow: none;
-        margin-bottom: 0;
-        transition: border-color 0.2s;
+        border-radius: var(--radius-md); 
+        padding: 24px; 
+        margin-bottom: 16px; 
+        transition: all 0.2s ease;
     }
-    .question-card.invalid-highlight {
-        border-color: #FCA5A5;
-        background-color: #FFFDFD;
+    .question-card.invalid-highlight { 
+        border-color: #FCA5A5; 
+        background-color: #FFFDFD; 
     }
     .question-card p.question-text {
         margin-top: 0;
         margin-bottom: 20px;
-        font-weight: 500;
-        font-size: 1rem;
+        font-weight: 600;
+        font-size: 1.05rem;
         color: var(--text-primary);
-        letter-spacing: .1px;
         line-height: 1.5;
     }
-
-    .assessment-options-grid {
-        display: flex;
-        flex-direction: column;
-        justify-content: flex-start;
-        gap: 8px;
+    
+    .assessment-options-grid { 
+        display: flex; 
+        flex-direction: column; 
+        gap: 10px; 
     }
 
+    /* Polished Theme Option Buttons */
     .option-btn {
-        background: transparent;
-        border: 1px solid var(--border-default);
-        color: var(--text-primary);
-        font-weight: 400;
-        font-size: 0.9rem;
-        cursor: pointer;
-        padding: 12px 16px;
+        background: transparent; 
+        border: 1px solid rgba(166, 161, 190, 0.5);
+        color: var(--text-primary); 
+        padding: 14px 18px; 
         display: inline-flex;
-        align-items: center;
-        gap: 12px;
-        text-align: left;
-        outline: none;
-        border-radius: 6px;
-        transition: all 0.2s;
-        width: 100%;
+        align-items: center; 
+        gap: 14px; 
+        border-radius: 8px; 
+        width: 100%; 
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        outline: none !important;
+        box-shadow: none !important;
     }
     .option-btn::before {
-        content: "";
-        display: inline-block;
-        width: 20px;
+        content: ""; 
+        display: inline-block; 
+        width: 20px; 
         height: 20px;
-        border: 2px solid var(--text-secondary);
-        border-radius: 50%;
-        box-sizing: border-box;
-        transition: border-color 0.2s, background-color 0.2s;
+        border: 2px solid var(--text-secondary); 
+        border-radius: 50%; 
         flex-shrink: 0;
+        transition: all 0.2s ease;
     }
-    .option-btn:hover {
-        background-color: rgba(13, 110, 253, 0.04);
-        border-color: var(--primary-color);
+    
+    /* Interactive Hover State using your Lilac color */
+    .option-btn:hover { 
+        background-color: var(--color-lilac) !important; 
+        border-color: var(--color-lavender) !important;
+        color: #333333;
     }
-    .option-btn.active {
-        background: rgba(13, 110, 253, 0.06);
-        color: var(--text-primary);
-        border-color: var(--primary-color);
-        font-weight: 500;
+    
+    /* FIXED: Complete Organic Active Tint overrides old blue state layout */
+    .option-btn.active, .option-btn.active:focus, .option-btn.active:active { 
+        background-color: #f4f7f4 !important; 
+        color: var(--text-primary) !important;
+        border-color: var(--color-matcha) !important; 
+        font-weight: 600;
     }
-    .option-btn.active::before {
-        border-color: var(--primary-color); 
-        background-color: var(--primary-color); 
-        box-shadow: inset 0 0 0 4px var(--card-bg);
+    .option-btn.active::before { 
+        border-color: var(--color-matcha) !important; 
+        background-color: var(--color-matcha) !important; 
+        box-shadow: inset 0 0 0 4px var(--card-bg); 
     }
 
-    .form-actions {
-        display: flex;
-        justify-content: flex-end;
-        align-items: center;
-        gap: 12px;
-        margin-top: 12px;
-        padding-bottom: 40px;
+    .form-actions { 
+        display: flex; 
+        justify-content: flex-end; 
+        align-items: center; 
+        gap: 12px; 
+        margin-top: 24px; 
+        padding-bottom: 40px; 
     }
+    
     .btn-submit-assessment {
-        background-color: var(--primary-color); 
-        color: #ffffff;
-        border: none;
+        background-color: var(--color-matcha) !important; 
+        color: #ffffff !important; 
+        border: 1px solid var(--color-matcha) !important; 
         padding: 14px 32px;
-        font-size: 0.95rem;
-        font-weight: 600;
-        border-radius: 6px;
+        font-size: 0.95rem; 
+        font-weight: 600; 
+        border-radius: 8px; 
         cursor: pointer;
-        transition: background-color 0.2s, box-shadow 0.2s;
-        box-shadow: 0 4px 12px rgba(13, 110, 253, 0.2);
+        transition: all 0.2s ease;
+        box-shadow: 0 4px 12px rgba(164, 194, 165, 0.25);
     }
-    .btn-submit-assessment:hover {
-        background-color: var(--primary-hover); 
-        box-shadow: 0 6px 16px rgba(13, 110, 253, 0.3);
+    .btn-submit-assessment:hover { 
+        background-color: var(--color-matcha-hover) !important; 
+        border-color: var(--color-matcha-hover) !important;
     }
 
     .btn-back-home {
-        background: var(--card-bg);
+        background: var(--card-bg); 
         border: 1px solid var(--border-default);
         color: var(--text-secondary); 
-        padding: 14px 24px;
+        padding: 14px 24px; 
         font-size: 0.95rem;
-        border-radius: 6px;
-        text-decoration: none;
+        border-radius: 8px; 
+        text-decoration: none; 
         font-weight: 500;
-        transition: all 0.2s;
+        transition: all 0.2s ease;
     }
-    .btn-back-home:hover {
-        background-color: #F8F9FA;
-        color: var(--text-primary);
-        border-color: #BEC0C4;
+    .btn-back-home:hover { 
+        background-color: var(--color-oat) !important; 
+        color: var(--text-primary) !important; 
     }
 
     @media (max-width: 600px) {
-        .form-actions {
-            flex-direction: column-reverse;
-            align-items: stretch;
-        }
-        .btn-submit-assessment, .btn-back-home {
-            width: 100%;
-            text-align: center;
-        }
+        .form-actions { flex-direction: column-reverse; align-items: stretch; }
+        .btn-submit-assessment, .btn-back-home { width: 100%; text-align: center; }
     }
 </style>
 
@@ -248,65 +204,28 @@
 
     <main class="wellbeing-card main-form-panel">
         <form method="POST" class="wellbeing-form" id="assessmentForm">
+            {% for i in range(1, 6) %}
             <div class="question-card">
-                <p class="question-text">1. How often have you felt calm, peaceful, and relaxed today?</p>
+                <p class="question-text">
+                    {% if i==1 %}1. How often have you felt calm, peaceful, and relaxed today?{% endif %}
+                    {% if i==2 %}2. Have you been able to manage daily stresses comfortably?{% endif %}
+                    {% if i==3 %}3. How frequently did you feel energetic and motivated to do your tasks?{% endif %}
+                    {% if i==4 %}4. Have you felt supported and connected to friends, family, or peers?{% endif %}
+                    {% if i==5 %}5. How content have you been with your sleep quality and physical rest?{% endif %}
+                </p>
                 <div class="assessment-options-grid">
                     <button type="button" class="option-btn" data-value="0">Never</button>
                     <button type="button" class="option-btn" data-value="1">Sometimes</button>
                     <button type="button" class="option-btn" data-value="2">Often</button>
                     <button type="button" class="option-btn" data-value="3">Always</button>
                 </div>
-                <input type="hidden" name="q1">
+                <input type="hidden" name="q{{i}}">
             </div>
+            {% endfor %}
 
-            <div class="question-card">
-                <p class="question-text">2. Have you been able to manage daily stresses comfortably?</p>
-                <div class="assessment-options-grid">
-                    <button type="button" class="option-btn" data-value="0">Never</button>
-                    <button type="button" class="option-btn" data-value="1">Sometimes</button>
-                    <button type="button" class="option-btn" data-value="2">Often</button>
-                    <button type="button" class="option-btn" data-value="3">Always</button>
-                </div>
-                <input type="hidden" name="q2">
-            </div>
-
-            <div class="question-card">
-                <p class="question-text">3. How frequently did you feel energetic and motivated to do your tasks?</p>
-                <div class="assessment-options-grid">
-                    <button type="button" class="option-btn" data-value="0">Never</button>
-                    <button type="button" class="option-btn" data-value="1">Sometimes</button>
-                    <button type="button" class="option-btn" data-value="2">Often</button>
-                    <button type="button" class="option-btn" data-value="3">Always</button>
-                </div>
-                <input type="hidden" name="q3">
-            </div>
-
-            <div class="question-card">
-                <p class="question-text">4. Have you felt supported and connected to friends, family, or peers?</p>
-                <div class="assessment-options-grid">
-                    <button type="button" class="option-btn" data-value="0">Never</button>
-                    <button type="button" class="option-btn" data-value="1">Sometimes</button>
-                    <button type="button" class="option-btn" data-value="2">Often</button>
-                    <button type="button" class="option-btn" data-value="3">Always</button>
-                </div>
-                <input type="hidden" name="q4">
-            </div>
-
-            <div class="question-card">
-                <p class="question-text">5. How content have you been with your sleep quality and physical rest?</p>
-                <div class="assessment-options-grid">
-                    <button type="button" class="option-btn" data-value="0">Never</button>
-                    <button type="button" class="option-btn" data-value="1">Sometimes</button>
-                    <button type="button" class="option-btn" data-value="2">Often</button>
-                    <button type="button" class="option-btn" data-value="3">Always</button>
-                </div>
-                <input type="hidden" name="q5">
-            </div>
-
-            <!-- Footer Action Buttons -->
             <div class="form-actions">
                 <a class="btn-back-home" href="/wellbeing">Back to Wellbeing Tracking</a>
-                <button type="submit" class="btn btn-primary btn-submit-assessment">Save Assessment</button>
+                <button type="submit" class="btn btn-submit-assessment">Save Assessment</button>
             </div>
         </form>
     </main>
@@ -321,7 +240,6 @@
                 buttons.forEach(b => b.classList.remove('active'));
                 this.classList.add('active');
                 hiddenInput.value = this.dataset.value;
-                
                 card.classList.remove('invalid-highlight');
             });
         });
@@ -329,31 +247,19 @@
 
     document.getElementById('assessmentForm').addEventListener('submit', function(event) {
         let formIsValid = true;
-        const hiddenInputs = this.querySelectorAll('input[type="hidden"]');
-        const errorBanner = document.getElementById('assessmentErrorBanner');
-
-        hiddenInputs.forEach(input => {
-            const parentCard = input.closest('.question-card');
+        this.querySelectorAll('input[type="hidden"]').forEach(input => {
             if (!input.value.trim()) {
                 formIsValid = false;
-                if (parentCard) {
-                    parentCard.classList.add('invalid-highlight'); 
-                }
+                input.closest('.question-card').classList.add('invalid-highlight');
             }
         });
-
         if (!formIsValid) {
-            event.preventDefault(); 
-            if (errorBanner) {
-                errorBanner.style.display = 'flex'; 
-                window.scrollTo({ top: 0, behavior: 'smooth' }); 
-            }
+            event.preventDefault();
+            document.getElementById('assessmentErrorBanner').style.display = 'flex';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     });
 
-    function dismissErrorBanner() {
-        const banner = document.getElementById('assessmentErrorBanner');
-        if (banner) banner.style.display = 'none';
-    }
+    function dismissErrorBanner() { document.getElementById('assessmentErrorBanner').style.display = 'none'; }
 </script>
 {% endblock %}

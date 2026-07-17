@@ -1,20 +1,40 @@
 :root {
-    --primary-color: #4F46E5;
+    --color-oat: #E8DCC4;
+    --color-matcha: #A4C2A5;
+    --color-lavender: #A6A1BE;
+    --color-lilac: #DCD0E4;
 }
 
-.navbar {
-    background-color: var(--primary-color) !important;
+/* Apply colors to your design system */
+body { background-color: #faf9f6; } /* Light warm base */
+
+.btn-primary { 
+    background-color: var(--color-matcha) !important; 
+    border-color: var(--color-matcha) !important; 
+}
+.btn-primary:hover { background-color: #87a088 !important; }
+
+.btn-outline-primary { 
+    color: var(--color-matcha) !important; 
+    border-color: var(--color-matcha) !important; 
+}
+.btn-outline-primary:hover { 
+    background-color: var(--color-lavender) !important; 
+    color: #444 !important; 
 }
 
-.btn-primary {
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
-}
+.bg-primary { background-color: var(--color-lilac) !important; }
+.text-primary { color: var(--color-lavender) !important; }
 
-.btn-primary:hover {
-    background-color: #4338CA;
-}
+/* Cards and UI elements */
+.card { border: 1px solid var(--color-lavender) !important; }
+.progress-bar { background-color: var(--color-matcha) !important; }
 
-.card {
-    border-radius: 12px;
+/* Bucket Headers */
+h6.fw-bold { color: var(--color-lavender); }
+
+.time-bucket-header {
+    background-color: var(--color-lilac);
+    padding: 0.5rem;
+    border-radius: 0.5rem;
 }

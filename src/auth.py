@@ -1,14 +1,18 @@
 from uuid import uuid4
-
+from typing import Any
 from flask import Blueprint, jsonify, redirect, render_template, request, session, url_for
 
-try:
-    from database import supabase
+# 1. Provide an explicit fallback assignment hint so mypy knows this variable can be None
+supabase: Any = None
+HAS_SUPABASE = False
 
-    HAS_SUPABASE = True
+try:
+    from database import supabase as sb
+    if sb is not None:
+        supabase = sb
+        HAS_SUPABASE = True
 except (ImportError, ValueError, RuntimeError):
-    supabase = None
-    HAS_SUPABASE = False
+    pass
 
 auth = Blueprint("auth", __name__)
 
@@ -20,7 +24,9 @@ fallback_patients = {
         "name": "John Doe",
     }
 }
-fallback_sessions = {}
+
+# 2. FIXED: Explicit type annotation added to resolve the var-annotated mypy error
+fallback_sessions: dict[str, str] = {}
 
 
 @auth.route("/welcome")
@@ -95,7 +101,6 @@ def login():
     fallback_sessions[session_id] = email
 
     # DYNAMIC FIX: Stores the individual user's structural primary key inside the session container.
-    # This feeds directly into get_current_user_id() in the wellbeing module.
     session["user_id"] = user.get("id")
     session["session_id"] = session_id
 

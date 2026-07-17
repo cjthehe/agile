@@ -5,8 +5,6 @@
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
     :root {
-        --primary-color: #0D6EFD; 
-        --primary-hover: #0b5ed7;
         --primary-light: #EBF3FF;
         --bg-card: #FFFFFF;
         --text-main: #0F172A;
@@ -108,7 +106,7 @@
         color: var(--text-muted);
     }
     .mood-btn:hover {
-        border-color: var(--primary-color);
+        border-color: var(--color-matcha);
         background: var(--primary-light);
         transform: translateY(-2px);
     }
@@ -116,12 +114,12 @@
         transform: scale(1.2);
     }
     .mood-btn.active {
-        border-color: var(--primary-color);
+        border-color: var(--color-matcha);
         background: var(--primary-light);
-        box-shadow: 0 0 0 2px var(--primary-color);
+        box-shadow: 0 0 0 2px var(--color-matcha);
     }
     .mood-btn.active .label {
-        color: var(--primary-color);
+        color: var(--color-matcha);
     }
 
     .note-box {
@@ -140,8 +138,8 @@
     .note-box:focus {
         outline: none;
         background: #FFFFFF;
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.1);
+        border-color: var(--color-matcha);
+        box-shadow: 0 0 0 4px rgba(164, 194, 165, 0.2);
     }
 
     .wellbeing-btn {
@@ -158,36 +156,28 @@
         transition: all 0.15s ease;
     }
     .btn-primary {
-        background-color: var(--primary-color);
-        color: #FFFFFF;
-        box-shadow: 0 4px 12px rgba(13, 110, 253, 0.2);
+        background-color: var(--color-matcha) !important;
+        color: #FFFFFF !important;
+        border: 1px solid var(--color-matcha) !important;
+        box-shadow: 0 4px 12px rgba(164, 194, 165, 0.2);
     }
     .btn-primary:hover {
-        background-color: var(--primary-hover);
+        background-color: #87a088 !important;
+        border-color: #87a088 !important;
         transform: translateY(-1px);
-        box-shadow: 0 6px 16px rgba(13, 110, 253, 0.3);
     }
     
     .btn-secondary {
-        background: #FFFFFF !important;
-        border: 1px solid #D1D5DB !important;
-        color: #4B5563 !important;
+        background: transparent !important;
+        border: 1px solid var(--color-lavender) !important;
+        color: var(--text-main) !important;
         padding: 10px 24px;
         font-size: 0.95rem;
         border-radius: 8px !important;
-        text-decoration: none;
-        font-weight: 500;
-        transition: all 0.15s ease;
-        box-shadow: none !important;
-        transform: none !important;
     }
     .btn-secondary:hover {
-        background-color: #F9FAFB !important;
-        color: #1F2937 !important;
-        border-color: #9CA3AF !important;
-        text-decoration: none;
-        transform: none !important;
-        box-shadow: none !important;
+        background-color: var(--color-lilac) !important;
+        color: #444 !important;
     }
 
     .history-panel {
@@ -244,13 +234,12 @@
         margin-bottom: 12px;
     }
     .history-mood-badge {
-        background: var(--primary-light);
-        color: var(--primary-color);
+        background: var(--color-lilac);
+        color: #444444;
         padding: 6px 14px;
         border-radius: 20px;
         font-weight: 700;
         font-size: 0.85rem;
-        border: 1px solid rgba(13, 110, 253, 0.1);
     }
     .history-time {
         color: var(--text-muted);
@@ -273,26 +262,22 @@
         background: #FFFFFF;
     }
     .wellbeing-link {
-        color: var(--primary-color);
+        color: var(--text-main);
         text-decoration: none;
         font-weight: 600;
         font-size: 0.95rem;
-        transition: color 0.15s ease;
     }
     .wellbeing-link:hover {
-        color: var(--primary-hover);
+        color: #444;
         text-decoration: underline;
     }
 
-    .wellbeing-success {
+    .wellbeing-success, .wellbeing-error {
         padding: 18px 24px;
-        background: #ECFDF5;
-        color: #065F46;
         border-radius: var(--radius-md);
         margin-bottom: 32px;
         font-weight: 600;
         font-size: 0.975rem;
-        border: 1px solid #A7F3D0;
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -300,50 +285,11 @@
         box-shadow: var(--shadow-sm);
         animation: fadeIn 0.3s ease;
     }
-    .success-close-btn {
-        background: transparent;
-        border: none;
-        color: #047857;
-        font-size: 1.25rem;
-        cursor: pointer;
-        line-height: 1;
-        padding: 0 4px;
-        font-weight: 700;
-        transition: color 0.15s ease;
-    }
-    .success-close-btn:hover {
-        color: #064E3B;
-    }
-
-    .wellbeing-error {
-        padding: 18px 24px;
-        background: #FEF2F2;
-        color: #991B1B;
-        border-radius: var(--radius-md);
-        margin-bottom: 32px;
-        font-weight: 600;
-        font-size: 0.975rem;
-        border: 1px solid #FCA5A5;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        box-shadow: var(--shadow-sm);
-        animation: fadeIn 0.3s ease;
-    }
-    .error-close-btn {
-        background: transparent;
-        border: none;
-        color: #B91C1C;
-        font-size: 1.25rem;
-        cursor: pointer;
-        line-height: 1;
-        padding: 0 4px;
-        font-weight: 700;
-        transition: color 0.15s ease;
-    }
-    .error-close-btn:hover {
-        color: #7F1D1D;
+    .wellbeing-success { background: #ECFDF5; color: #065F46; border: 1px solid #A7F3D0; }
+    .wellbeing-error { background: #FEF2F2; color: #991B1B; border: 1px solid #FCA5A5; }
+    
+    .success-close-btn, .error-close-btn {
+        background: transparent; border: none; font-size: 1.25rem; cursor: pointer; line-height: 1;
     }
 
     @keyframes fadeIn {
@@ -351,37 +297,15 @@
         to { opacity: 1; transform: translateY(0); }
     }
 
-    @media (max-width: 960px) {
-        .wellbeing-grid {
-            grid-template-columns: 1fr;
-            gap: 40px;
-        }
-    }
+    @media (max-width: 960px) { .wellbeing-grid { grid-template-columns: 1fr; gap: 40px; } }
     @media (max-width: 600px) {
-        .mood-selection-row {
-            grid-template-columns: repeat(3, 1fr);
-        }
-        .mood-btn {
-            padding: 16px 6px;
-        }
-        .wellbeing-page-header {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 16px;
-        }
-        .wellbeing-page-header .btn-secondary {
-            width: 100%;
-        }
-    }
-    @media (max-width: 400px) {
-        .mood-selection-row {
-            grid-template-columns: repeat(2, 1fr);
-        }
+        .mood-selection-row { grid-template-columns: repeat(3, 1fr); }
+        .wellbeing-page-header { flex-direction: column; align-items: flex-start; gap: 16px; }
+        .wellbeing-page-header .btn-secondary { width: 100%; }
     }
 </style>
 
 <div class="wellbeing-wrapper">
-    
     <header class="wellbeing-page-header">
         <div>
             <h1>Daily Mood Entry</h1>
@@ -403,60 +327,43 @@
     </div>
 
     <div class="wellbeing-grid">
-        
         <main class="wellbeing-card">
             <form method="POST" class="wellbeing-form" id="moodForm">
-                
                 <div class="form-group">
                     <label class="form-label">How are you feeling right now?</label>
-                    
                     <div class="mood-selection-row">
                         <button type="button" class="mood-btn" data-value="😊 Happy">
-                            <span class="emoji">😊</span>
-                            <span class="label">Happy</span>
+                            <span class="emoji">😊</span> <span class="label">Happy</span>
                         </button>
                         <button type="button" class="mood-btn" data-value="🙂 Calm">
-                            <span class="emoji">🙂</span>
-                            <span class="label">Calm</span>
+                            <span class="emoji">🙂</span> <span class="label">Calm</span>
                         </button>
                         <button type="button" class="mood-btn" data-value="😐 Neutral">
-                            <span class="emoji">😐</span>
-                            <span class="label">Neutral</span>
+                            <span class="emoji">😐</span> <span class="label">Neutral</span>
                         </button>
                         <button type="button" class="mood-btn" data-value="😔 Sad">
-                            <span class="emoji">😔</span>
-                            <span class="label">Sad</span>
+                            <span class="emoji">😔</span> <span class="label">Sad</span>
                         </button>
                         <button type="button" class="mood-btn" data-value="😢 Very Sad">
-                            <span class="emoji">😢</span>
-                            <span class="label">Very Sad</span>
+                            <span class="emoji">😢</span> <span class="label">Very Sad</span>
                         </button>
                     </div>
-                    
                     <input type="hidden" name="mood" id="selectedMood">
                 </div>
 
                 <div class="form-group">
                     <label for="note" class="form-label">Personal Notes</label>
-                    <textarea 
-                        id="note"
-                        name="note" 
-                        class="note-box" 
-                        placeholder="What's making you feel this way? Write your reflections here..."></textarea>
+                    <textarea id="note" name="note" class="note-box" placeholder="Write reflections here..."></textarea>
                 </div>
 
-                <button type="submit" class="wellbeing-btn btn-primary">
-                    Save Mood Entry
-                </button>
+                <button type="submit" class="wellbeing-btn btn-primary">Save Mood Entry</button>
             </form>
         </main>
 
         <aside class="history-panel">
             <div class="panel-header">
                 <h3>Mood History</h3>
-                <a class="wellbeing-link assessment-link" href="/questionnaire">
-                    Take Assessment &rarr;
-                </a>
+                <a class="wellbeing-link assessment-link" href="/questionnaire">Take Assessment &rarr;</a>
             </div>
 
             <div class="history-scroll-area">
@@ -479,51 +386,31 @@
                 {% endif %}
             </div>
         </aside>
-
     </div>
 </div>
 
 <script>
-    // Handle Interactive Mood Selection Clicks
     document.querySelectorAll('.mood-btn').forEach(btn => {
         btn.addEventListener('click', function() {
             document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('active'));
             this.classList.add('active');
             document.getElementById('selectedMood').value = this.dataset.value;
-            
-            // Instantly remove validation warning upon choice
-            const errorBanner = document.getElementById('errorBanner');
-            if (errorBanner) errorBanner.style.display = 'none';
+            if (document.getElementById('errorBanner')) document.getElementById('errorBanner').style.display = 'none';
         });
     });
 
-    // Handle Client-Side Submission Filtering
     document.getElementById('moodForm').addEventListener('submit', function(event) {
-        const selectedMood = document.getElementById('selectedMood').value;
-        const errorBanner = document.getElementById('errorBanner');
-        const successBanner = document.getElementById('successBanner');
-
-        if (!selectedMood) {
-            event.preventDefault(); // Stop dispatch routine execution
-            
-            if (successBanner) successBanner.style.display = 'none';
-            if (errorBanner) {
-                errorBanner.style.display = 'flex';
-                window.scrollTo({ top: 0, behavior: 'smooth' }); 
+        if (!document.getElementById('selectedMood').value) {
+            event.preventDefault();
+            if (document.getElementById('successBanner')) document.getElementById('successBanner').style.display = 'none';
+            if (document.getElementById('errorBanner')) {
+                document.getElementById('errorBanner').style.display = 'flex';
+                window.scrollTo({ top: 0, behavior: 'smooth' });
             }
         }
     });
 
-    // Close and Clear Success Alerts
-    function dismissBanner() {
-        const banner = document.getElementById('successBanner');
-        if (banner) banner.style.display = 'none';
-    }
-
-    // Close and Clear Invalidation Warnings
-    function dismissErrorBanner() {
-        const banner = document.getElementById('errorBanner');
-        if (banner) banner.style.display = 'none';
-    }
+    function dismissBanner() { document.getElementById('successBanner').style.display = 'none'; }
+    function dismissErrorBanner() { document.getElementById('errorBanner').style.display = 'none'; }
 </script>
 {% endblock %}
