@@ -2,6 +2,7 @@ from datetime import datetime
 
 from flask import Flask, flash, redirect, render_template, request, url_for  # type: ignore[import]
 
+from admin import admin as admin_blueprint
 from appointment_booking import (
     add_counselor_availability,
     cancel_appointment,
@@ -25,6 +26,7 @@ app.secret_key = "your_secret_key"  # Required for flash messages
 app.register_blueprint(auth_blueprint)
 app.register_blueprint(register_blueprint)
 app.register_blueprint(wellbeing_bp)
+app.register_blueprint(admin_blueprint)
 
 
 # Add custom strftime filter for Jinja2

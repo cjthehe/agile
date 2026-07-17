@@ -20,6 +20,13 @@ function updateAuthButtons() {
 // Global initialization logic block run on page boot
 document.addEventListener("DOMContentLoaded", () => {
     updateAuthButtons();
+
+    if (logoutButton) {
+        logoutButton.addEventListener("click", async (event) => {
+            event.preventDefault();
+            await logoutUser();
+        });
+    }
 });
 
 // User registration interface submission routine
@@ -47,16 +54,149 @@ async function registerUser() {
             return;
         }
 
-        messageBox.textContent = `Registration successful. Welcome, ${data.user.name}!`;
-        messageBox.className = 'text-success mt-3 text-center';
-        
-        const regForm = document.getElementById('registerForm');
-        if (regForm) regForm.reset();
+    messageBox.textContent = data.message;
+    messageBox.className = "text-success mt-3 text-center";
+
+    // Save email for verification
+    localStorage.setItem("verification_email", data.user.email);
+
+    // Hide registration card
+    document
+      .getElementById("registerCard")
+      .classList.add("d-none");
+
+    // Show verification card
+    document
+      .getElementById("verificationCard")
+      .classList.remove("d-none");
+  } catch (error) {
+    messageBox.textContent = 'Registration failed';
+    messageBox.className = 'text-danger mt-3 text-center';
+  }
+}
+
+async function verifyEmail() {
+
+    const email = localStorage.getItem("verification_email");
+
+    const code = document
+        .getElementById("verificationCode")
+        .value;
+
+    const message = document
+        .getElementById("verificationMessage");
+
+    try {
+
+        const response = await fetch("/api/verify-email", {
+
+            method: "POST",
+
+            headers: {
+                "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify({
+
+                email: email,
+
+                verification_code: code
+
+            })
+
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+
+            message.textContent = data.message;
+            message.className = "text-success mt-3 text-center";
+
+            localStorage.removeItem("verification_email");
+
+            setTimeout(() => {
+
+                window.location.href = "/login";
+
+            }, 2000);
+
+        } else {
+
+            message.textContent = data.message;
+            message.className = "text-danger mt-3 text-center";
+
+        }
+
     } catch (error) {
-        console.error("Error during registration:", error);
-        messageBox.textContent = 'Registration failed';
-        messageBox.className = 'text-danger mt-3 text-center';
+
+        message.textContent = "Verification failed.";
+        message.className = "text-danger mt-3 text-center";
+
     }
+
+}
+
+async function verifyEmail() {
+
+    const email = localStorage.getItem("verification_email");
+
+    const code = document
+        .getElementById("verificationCode")
+        .value;
+
+    const message = document
+        .getElementById("verificationMessage");
+
+    try {
+
+        const response = await fetch("/api/verify-email", {
+
+            method: "POST",
+
+            headers: {
+                "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify({
+
+                email: email,
+
+                verification_code: code
+
+            })
+
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+
+            message.textContent = data.message;
+            message.className = "text-success mt-3 text-center";
+
+            localStorage.removeItem("verification_email");
+
+            setTimeout(() => {
+
+                window.location.href = "/login";
+
+            }, 2000);
+
+        } else {
+
+            message.textContent = data.message;
+            message.className = "text-danger mt-3 text-center";
+
+        }
+
+    } catch (error) {
+
+        message.textContent = "Verification failed.";
+        message.className = "text-danger mt-3 text-center";
+
+    }
+
 }
 
 // Handles user login submission
@@ -78,7 +218,7 @@ async function login() {
             // Save the session ID to local storage so the logout function can read it later
             localStorage.setItem('session_id', data.session_id);
             // Redirect smoothly to your home dashboard
-            window.location.href = '/home';
+            window.location.href = data.redirect;
         } else {
             messageEl.innerText = data.message || "Login failed.";
         }
@@ -117,4 +257,24 @@ async function logout(event) {
         localStorage.removeItem('session_id');
         window.location.href = '/login';
     }
+}
+
+async function createCounselor() {
+    const response = await fetch("/api/admin/create-counselor", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            name: document.getElementById("name").value,
+            email: document.getElementById("email").value,
+            role: document.getElementById("role").value
+        })
+    });
+
+    const data = await response.json();
+    const messageEl = document.getElementById("adminMessage");
+
+    messageEl.innerText = data.message || "Unable to create counselor.";
+    messageEl.className = response.ok ? "text-success mt-3 text-center" : "text-danger mt-3 text-center";
 }

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0 p-4">
+                <div class="card-body">
+                    <h2 class="fw-bold text-center mb-3">Activate Your Account</h2>
+                    <p class="text-muted text-center mb-4">Create a secure password to finish activating your counselor account.</p>
+
+                    {% if error %}
+                        <div class="alert alert-danger">{{ error }}</div>
+                    {% endif %}
+
+                    {% if success %}
+                        <div class="alert alert-success">{{ success }}</div>
+                        <div class="d-grid">
+                            <a href="/login" class="btn btn-primary rounded-pill py-2">Go to Login</a>
+                        </div>
+                    {% else %}
+                        <form method="POST">
+                            <input type="hidden" name="email" value="{{ email }}">
+                            <input type="hidden" name="code" value="{{ code }}">
+
+                            <div class="mb-3">
+                                <label for="password" class="form-label">Create Password</label>
+                                <input type="password" id="password" name="password" class="form-control" placeholder="New password" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="confirm_password" class="form-label">Confirm Password</label>
+                                <input type="password" id="confirm_password" name="confirm_password" class="form-control" placeholder="Confirm password" required>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary w-100 rounded-pill py-2">Activate Account</button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
