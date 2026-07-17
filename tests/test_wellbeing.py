@@ -1,190 +1,244 @@
-from datetime import datetime
+import pytest
+from flask import Flask
 
-from flask import Blueprint, redirect, render_template, request, session, url_for
+# Import the blueprint and helper functions from your wellbeing tracker
+import wellbeing_tracking
+from wellbeing_tracking import calculate_metrics, wellbeing_bp
 
-from database import supabase
+# ==========================================
+# MOCKS & FIXTURES
+# ==========================================
 
-wellbeing_bp = Blueprint("wellbeing", __name__, template_folder="templates", static_folder="static")
+
+class MockSupabaseResponse:
+    def __init__(self, data):
+        self.data = data
 
 
-def get_current_user_id():
+class ChainableSupabaseMock:
+    """A flexible mock to simulate Supabase's chained methods (.select().eq().execute())"""
+
+    def __init__(self, return_data=None):
+        self.return_data = return_data or []
+        self.inserted_payload = None
+
+    def insert(self, payload):
+        self.inserted_payload = payload
+        return self
+
+    def select(self, *args, **kwargs):
+        return self
+
+    def eq(self, *args, **kwargs):
+        return self
+
+    def order(self, *args, **kwargs):
+        return self
+
+    def single(self):
+        # Convert list to a single dict for the .single() method used in /result
+        if isinstance(self.return_data, list) and len(self.return_data) > 0:
+            self.return_data = self.return_data[0]
+        elif isinstance(self.return_data, list):
+            self.return_data = None
+        return self
+
+    def execute(self):
+        # Simulate inserting and returning the new row
+        if self.inserted_payload and not self.return_data:
+            return MockSupabaseResponse([{"id": "new-mock-id"}])
+        return MockSupabaseResponse(self.return_data)
+
+
+class FakeSupabase:
+    def __init__(self):
+        self.tables = {}
+
+    def table(self, name):
+        if name not in self.tables:
+            self.tables[name] = ChainableSupabaseMock()
+        return self.tables[name]
+
+
+@pytest.fixture
+def app():
+    """Creates a dummy Flask application to test the wellbeing blueprint."""
+    app = Flask(__name__)
+    app.config["TESTING"] = True
+    app.secret_key = "super_secret_agile_key"
+
+    # Register the wellbeing blueprint
+    app.register_blueprint(wellbeing_bp)
+
+    # Create a dummy auth blueprint to prevent url_for('auth.login_page') BuildErrors
+    from flask import Blueprint
+
+    dummy_auth = Blueprint("auth", __name__)
+
+    @dummy_auth.route("/login")
+    def login_page():
+        return "Dummy Login Page"
+
+    app.register_blueprint(dummy_auth)
+
+    return app
+
+
+@pytest.fixture
+def client(app):
+    return app.test_client()
+
+
+@pytest.fixture
+def auth_client(client):
+    """Provides a test client with an active, logged-in user session."""
+    with client.session_transaction() as sess:
+        sess["user_id"] = "test-user-123"
+    return client
+
+
+@pytest.fixture
+def mock_db(monkeypatch):
+    """Injects our FakeSupabase into the wellbeing_tracking module."""
+    db = FakeSupabase()
+    monkeypatch.setattr(wellbeing_tracking, "supabase", db)
+    return db
+
+
+# ==========================================
+# UNIT TESTS: HELPER LOGIC
+# ==========================================
+
+
+def test_calculate_metrics():
     """
-    Retrieves the authentic logged-in user's ID directly from the secure session.
-    If no session exists, it falls back safely to None or forces a redirect.
+    ACCEPTANCE TEST: The scoring logic must consistently output the right
+    category and recommendation based on the mathematical thresholds.
     """
-    return session.get("user_id")
+    # Test Good tier (<= 4)
+    cat, rec = calculate_metrics(3)
+    assert cat == "Good"
+
+    # Test Moderate tier (<= 8)
+    cat, rec = calculate_metrics(7)
+    assert cat == "Moderate"
+
+    # Test Needs Attention tier (> 8)
+    cat, rec = calculate_metrics(12)
+    assert cat == "Needs Attention"
 
 
-@wellbeing_bp.route("/wellbeing", methods=["GET"])
-def wellbeing():
+# ==========================================
+# ACCEPTANCE TESTS: UNAUTHENTICATED ACCESS
+# ==========================================
+
+
+def test_unauthenticated_access_redirects(client):
     """
-    Renders the central dual-button hub dashboard (wellbeing.html).
+    ACCEPTANCE TEST: Users without an active session ID must be
+    kicked out and redirected to the login page to protect health data.
     """
-    user_id = get_current_user_id()
-    if not user_id:
-        return redirect(url_for("auth.login_page"))
+    endpoints = ["/wellbeing", "/mood", "/questionnaire", "/result"]
 
-    return render_template("wellbeing.html")
+    for endpoint in endpoints:
+        response = client.get(endpoint)
+        assert response.status_code == 302
+        assert "/login" in response.location
 
 
-@wellbeing_bp.route("/mood", methods=["GET", "POST"])
-def mood_page():
+# ==========================================
+# ACCEPTANCE TESTS: WELLBEING DASHBOARD
+# ==========================================
+
+
+def test_wellbeing_dashboard_renders(auth_client):
     """
-    Renders the Daily Mood Logger entry form and history list panel (mood.html).
+    ACCEPTANCE TEST: A logged-in user can successfully access the main hub.
     """
-    user_id = get_current_user_id()
-    if not user_id:
-        return redirect(url_for("auth.login_page"))
-
-    success = False
-
-    if request.method == "POST":
-        mood = request.form.get("mood")
-        note = request.form.get("note")
-
-        if mood:
-            try:
-                local_now = datetime.now().astimezone().isoformat()
-
-                # Save entry bound strictly to the current active user
-                supabase.table("mood_logs").insert(
-                    {
-                        "user_id": user_id,
-                        "mood": mood,
-                        "notes": note,
-                        "activity": "Web Log",
-                        "created_at": local_now,
-                    }
-                ).execute()
-                success = True
-            except Exception as e:
-                print(f"Error saving mood log: {e}")
-
-    records = []
-    try:
-        response = (
-            supabase.table("mood_logs")
-            .select("mood, created_at, notes")
-            .eq("user_id", user_id)  # Strict user scope isolation
-            .order("created_at", desc=True)
-            .execute()
-        )
-
-        for item in response.data:
-            dt_parsed = datetime.fromisoformat(item["created_at"].replace("Z", "+00:00"))
-            local_dt = dt_parsed.astimezone()
-
-            records.append(
-                {
-                    "mood": item["mood"],
-                    "note": item["notes"],
-                    "datetime": local_dt.strftime("%d/%m/%Y %H:%M"),
-                }
-            )
-    except Exception as e:
-        print(f"Error retrieving mood logs: {e}")
-
-    # FIXED: Corrected rendering target name to serve the actual logging page template
-    return render_template("mood.html", success=success, records=records)
+    response = auth_client.get("/wellbeing")
+    assert response.status_code == 200
 
 
-@wellbeing_bp.route("/questionnaire", methods=["GET", "POST"])
-def questionnaire():
+# ==========================================
+# ACCEPTANCE TESTS: MOOD TRACKER
+# ==========================================
+
+
+def test_get_mood_page_loads_history(auth_client, mock_db):
     """
-    Processes self-assessment questionnaires and stores scored outcomes.
+    ACCEPTANCE TEST: Accessing the mood page fetches previous logs
+    and converts the database UTC time to a local string.
     """
-    user_id = get_current_user_id()
-    if not user_id:
-        return redirect(url_for("auth.login_page"))
-
-    if request.method == "POST":
-        score = 0
-        raw_answers = {}
-
-        for i in range(1, 6):
-            val = int(request.form.get(f"q{i}", 0))
-            score += val
-            raw_answers[f"q{i}"] = val
-
-        try:
-            local_now = datetime.now().astimezone().isoformat()
-
-            res = (
-                supabase.table("assessments")
-                .insert(
-                    {
-                        "user_id": user_id,
-                        "title": "Self Assessment",
-                        "score": score,
-                        "raw_answers": raw_answers,
-                        "created_at": local_now,
-                    }
-                )
-                .execute()
-            )
-
-            if res.data:
-                session["latest_assessment_id"] = res.data[0]["id"]
-                return redirect(url_for("wellbeing.result"))
-
-        except Exception as e:
-            print(f"Error saving assessment: {e}")
-
-    return render_template("questionnaire.html")
-
-
-@wellbeing_bp.route("/result")
-def result():
-    """
-    Renders personal feedback metrics for the user's latest assessment.
-    """
-    user_id = get_current_user_id()
-    if not user_id:
-        return redirect(url_for("auth.login_page"))
-
-    assessment_id = session.get("latest_assessment_id")
-    if not assessment_id:
-        return redirect(url_for("wellbeing.questionnaire"))
-
-    try:
-        # FIXED: Enforced a dual-key matching constraint so users can't view others' logs
-        response = (
-            supabase.table("assessments")
-            .select("*")
-            .eq("id", assessment_id)
-            .eq("user_id", user_id)
-            .single()
-            .execute()
-        )
-
-        data = response.data
-        if not data:
-            return redirect(url_for("wellbeing.questionnaire"))
-
-        score = data["score"]
-
-        if score <= 4:
-            category = "Good"
-            recommendation = "Keep maintaining your healthy lifestyle."
-        elif score <= 8:
-            category = "Moderate"
-            recommendation = "Take breaks and practice relaxation."
-        else:
-            category = "Needs Attention"
-            recommendation = "Consider talking with a counselor."
-
-        dt_parsed = datetime.fromisoformat(data["created_at"].replace("Z", "+00:00"))
-        local_dt = dt_parsed.astimezone()
-
-        latest_result = {
-            "score": score,
-            "category": category,
-            "recommendation": recommendation,
-            "datetime": local_dt.strftime("%d/%m/%Y %H:%M"),
+    # Inject fake historical data
+    mock_db.table("mood_logs").return_data = [
+        {
+            "mood": "Happy",
+            "notes": "Had a great therapy session",
+            "created_at": "2026-07-18T10:00:00+00:00",
         }
+    ]
 
-        return render_template("result.html", result=latest_result)
+    response = auth_client.get("/mood")
 
-    except Exception as e:
-        print(f"Error retrieving results: {e}")
-        return redirect(url_for("wellbeing.questionnaire"))
+    assert response.status_code == 200
+    # The template should render without crashing
+    assert b"Happy" in response.data
+
+
+def test_post_mood_creates_record(auth_client, mock_db):
+    """
+    ACCEPTANCE TEST: Submitting a new mood saves it to Supabase
+    with the correct user_id attached.
+    """
+    response = auth_client.post("/mood", data={"mood": "Anxious", "note": "Upcoming test"})
+
+    assert response.status_code == 200
+
+    # Verify it hit the database correctly
+    inserted = mock_db.table("mood_logs").inserted_payload
+    assert inserted is not None
+    assert inserted["user_id"] == "test-user-123"
+    assert inserted["mood"] == "Anxious"
+
+
+# ==========================================
+# ACCEPTANCE TESTS: QUESTIONNAIRE
+# ==========================================
+
+
+def test_post_questionnaire_calculates_score(auth_client, mock_db):
+    """
+    ACCEPTANCE TEST: Submitting the questionnaire safely calculates the score
+    from q1-q5, saves it, sets the session, and triggers a PRG redirect.
+    """
+    response = auth_client.post(
+        "/questionnaire", data={"q1": "2", "q2": "1", "q3": "3", "q4": "0", "q5": "2"}  # Total = 8
+    )
+
+    # It should perform a Post/Redirect/Get
+    assert response.status_code == 302
+    assert "/result" in response.location
+
+    # Verify the database captured the correct calculated score
+    inserted = mock_db.table("assessments").inserted_payload
+    assert inserted["score"] == 8
+    assert inserted["raw_answers"]["q3"] == 3
+
+    # Verify session was updated with the returned mock ID
+    with auth_client.session_transaction() as sess:
+        assert sess["latest_assessment_id"] == "new-mock-id"
+
+
+# ==========================================
+# ACCEPTANCE TESTS: RESULTS VIEW
+# ==========================================
+
+
+def test_result_without_session_id_redirects(auth_client):
+    """
+    ACCEPTANCE TEST: If a user navigates to /result but hasn't taken
+    a test recently, they are redirected to take the questionnaire.
+    """
+    response = auth_client.get("/result")
+    assert response.status_code == 302
+    assert "/questionnaire" in response.location
