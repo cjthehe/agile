@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5" style="max-width: 600px;">
+    <div class="card shadow-sm border-0 rounded-4 text-center p-4 p-md-5">
+        <div class="card-body">
+            
+            <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex justify-content-center align-items-center mb-4" style="width: 80px; height: 80px; font-size: 2.5rem;">
+                🗓️
+            </div>
+
+            <h2 class="fw-bold mb-3">Appointment Management</h2>
+            <p class="text-muted mb-5">Would you like to schedule a new session or check your upcoming schedule?</p>
+
+            <div class="d-grid gap-3">
+                <a href="/book" class="btn btn-primary btn-lg rounded-pill fw-medium shadow-sm py-3">
+                    ✨ Book New Appointment
+                </a>
+                <a href="/appointments" class="btn btn-outline-primary btn-lg rounded-pill fw-medium py-3">
+                    📋 View My Appointments
+                </a>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

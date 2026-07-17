@@ -1,13 +1,18 @@
 {% extends "base.html" %}
 
 {% block content %}
+<!-- ADD FLATPICKR CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
 <div class="container mt-4" style="max-width: 600px;">
+    <!-- Form Header -->
     <div class="mb-4">
         <a href="/" class="text-decoration-none text-dark fs-4">←</a>
         <h2 class="mt-2 fw-bold">Book Appointment</h2>
         <p class="text-muted">Find your therapist</p>
     </div>
 
+    <!-- Stepper Indicator -->
     <div class="d-flex justify-content-between align-items-center mb-5 position-relative">
         <div class="progress position-absolute w-100" style="height: 2px; z-index: -1;">
             <div id="progressBar" class="progress-bar bg-primary" role="progressbar" style="width: 0%;"></div>
@@ -19,6 +24,7 @@
 
     <form method="POST" action="/book" id="bookingForm">
         
+        <!-- ==================== STEP 1: CHOOSE THERAPIST ==================== -->
         <div id="step-1" class="form-step">
             <h5 class="fw-bold mb-3">Choose your therapist</h5>
             
@@ -32,16 +38,21 @@
                     <div class="card-body">
                         <div class="form-check">
                             <input class="form-check-input mt-3 counselor-radio" type="radio" name="counselor" value="{{ counselor.id }}" 
-                                   data-name="{{ counselor.name }}" 
-                                   data-specialization="{{ counselor.specialization }}"
-                                   data-slots='{{ counselor.available_slots | tojson }}' required>
+                                data-name="{{ counselor.name }}" 
+                                data-specialization="{{ counselor.specialization }}"
+                                data-slots='{{ counselor.available_slots | tojson }}' 
+                                data-booked='{{ counselor.booked_slots | tojson }}' required>
                             <div class="ms-3 d-flex align-items-center">
                                 <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex justify-content-center align-items-center fw-bold me-3" style="width: 50px; height: 50px; font-size: 1.2rem;">
                                     {{ counselor.name[0] }}
                                 </div>
-                                <div>
-                                    <h6 class="mb-1 fw-bold counselor-name">{{ counselor.name }}</h6>
-                                    <small class="text-muted counselor-spec">{{ counselor.specialization }}</small>
+                                <div class="w-100">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h6 class="mb-1 fw-bold counselor-name">{{ counselor.name }}</h6>
+                                        <small class="badge bg-light text-dark border">{{ counselor.experience }} yrs exp</small>
+                                    </div>
+                                    <small class="text-muted counselor-spec d-block mb-1">{{ counselor.specialization }}</small>
+                                    <small class="text-muted fst-italic" style="font-size: 0.8rem;">{{ counselor.desc }}</small>
                                 </div>
                             </div>
                         </div>
@@ -55,6 +66,7 @@
             </div>
         </div>
 
+        <!-- ==================== STEP 2: DATE & TIME ==================== -->
         <div id="step-2" class="form-step d-none">
             <button type="button" class="btn btn-link text-dark text-decoration-none p-0 mb-3" onclick="prevStep(1)">← Change Therapist</button>
             
@@ -67,30 +79,29 @@
             </div>
 
             <h5 class="fw-bold mb-3">Select Date & Time</h5>
-            <input type="date" class="form-control mb-4" name="date" required>
+            
+            <!-- CHANGED: Replaced standard date with text input for Flatpickr -->
+            <input type="text" id="appointmentDate" class="form-control mb-4 bg-white" name="date" placeholder="Select an available date..." required readonly>
             
             <div class="row g-2" id="timeSlotsContainer">
-                </div>
+                <p class="text-muted text-center" id="slotPlaceholder">Please select a date to view available times.</p>
+            </div>
 
             <div class="text-end mt-4">
                 <button type="button" class="btn btn-primary rounded-pill px-4" onclick="nextStep(3)">Next Step</button>
             </div>
         </div>
 
+        <!-- ==================== STEP 3: CONFIRMATION ==================== -->
         <div id="step-3" class="form-step d-none">
             <button type="button" class="btn btn-link text-dark text-decoration-none p-0 mb-3" onclick="prevStep(2)">← Change Date & Time</button>
             
-            <h5 class="fw-bold mb-3">Your Details</h5>
-            <div class="mb-4">
-                <input type="text" class="form-control rounded-pill" name="patient" placeholder="Enter your full name" required>
-            </div>
-
             <h5 class="fw-bold mb-3">Appointment Type</h5>
             <div class="mb-4">
                 <label class="card mb-2 shadow-sm" style="cursor: pointer;">
                     <div class="card-body p-3">
                         <div class="form-check">
-                            <input class="form-check-input" type="radio" name="appointment_type" value="in-person" checked>
+                            <input class="form-check-input" type="radio" name="appointment_type" value="In-person" checked>
                             <span class="ms-2">👥 In-person</span>
                         </div>
                     </div>
@@ -98,119 +109,148 @@
                 <label class="card shadow-sm" style="cursor: pointer;">
                     <div class="card-body p-3">
                         <div class="form-check">
-                            <input class="form-check-input" type="radio" name="appointment_type" value="phone">
+                            <input class="form-check-input" type="radio" name="appointment_type" value="Phone call">
                             <span class="ms-2">📞 Phone call</span>
                         </div>
                     </div>
                 </label>
             </div>
 
-            <div class="card bg-warning bg-opacity-10 border-warning mb-4">
-                <div class="card-body">
-                    <h6 class="text-warning mb-2">🔔 Appointment Reminders</h6>
-                    <small class="text-warning">Your appointment will be tracked in the system after booking.</small>
-                </div>
-            </div>
-
             <button type="submit" class="btn btn-success w-100 rounded-pill py-2 fw-bold">Confirm Appointment Booking</button>
         </div>
-
     </form>
 </div>
 
+<!-- ADD FLATPICKR JS -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
 <script>
-    // Live Search Functionality
+    // Map string days from your DB to JavaScript Date integers (0=Sun, 1=Mon, etc)
+    const dayMap = {
+        "Sunday": 0, "Monday": 1, "Tuesday": 2, "Wednesday": 3, 
+        "Thursday": 4, "Friday": 5, "Saturday": 6
+    };
+
+    // Store the flatpickr instance so we can destroy/recreate it when therapist changes
+    let datePickerInstance = null;
+
     function filterCounselors() {
         let input = document.getElementById('counselorSearch').value.toLowerCase();
         let cards = document.getElementsByClassName('counselor-card');
-
         for (let i = 0; i < cards.length; i++) {
             let name = cards[i].querySelector('.counselor-name').innerText.toLowerCase();
             let spec = cards[i].querySelector('.counselor-spec').innerText.toLowerCase();
-            
-            if (name.includes(input) || spec.includes(input)) {
-                cards[i].style.display = "";
-            } else {
-                cards[i].style.display = "none";
-            }
+            cards[i].style.display = (name.includes(input) || spec.includes(input)) ? "" : "none";
         }
     }
 
-    // Wizard Step Navigation
     function nextStep(step) {
-        // Validation check for Step 1
-        if (step === 2) {
-            let selected = document.querySelector('input[name="counselor"]:checked');
-            if (!selected) {
-                alert("Please select a therapist first.");
-                return;
-            }
-            // Populate Step 2 data dynamically based on selection
-            document.getElementById('selectedTherapistName').innerText = selected.getAttribute('data-name');
-            document.getElementById('selectedTherapistSpec').innerText = selected.getAttribute('data-specialization');
-            document.getElementById('selectedTherapistInitials').innerText = selected.getAttribute('data-name').charAt(0);
-            
-            // Populate slots
-            let slots = JSON.parse(selected.getAttribute('data-slots'));
-            let container = document.getElementById('timeSlotsContainer');
-            container.innerHTML = "";
-            
-            if(slots.length > 0) {
-                slots.forEach(slot => {
-                    let html = `
-                    <div class="col-6">
-                        <input type="radio" class="btn-check" name="slot" id="slot-${slot}" value="${slot}" required>
-                        <label class="btn btn-outline-primary w-100 rounded-pill" for="slot-${slot}">${slot}</label>
-                    </div>`;
-                    container.innerHTML += html;
-                });
-            } else {
-                container.innerHTML = "<p class='text-muted'>No slots available for this counselor.</p>";
-            }
-        }
+    if (step === 2) {
+        let selected = document.querySelector('input[name="counselor"]:checked');
+        if (!selected) return alert("Please select a therapist first.");
         
-        // Validation check for Step 2
-        if (step === 3) {
-            let date = document.querySelector('input[name="date"]').value;
-            let slot = document.querySelector('input[name="slot"]:checked');
-            if (!date || !slot) {
-                alert("Please select a date and a time slot.");
-                return;
-            }
-        }
-
-        updateUI(step);
-    }
-
-    function prevStep(step) {
-        updateUI(step);
-    }
-
-    function updateUI(step) {
-        // Hide all steps
-        document.querySelectorAll('.form-step').forEach(el => el.classList.add('d-none'));
-        // Show current step
-        document.getElementById(`step-${step}`).classList.remove('d-none');
+        document.getElementById('selectedTherapistName').innerText = selected.getAttribute('data-name');
+        document.getElementById('selectedTherapistSpec').innerText = selected.getAttribute('data-specialization');
+        document.getElementById('selectedTherapistInitials').innerText = selected.getAttribute('data-name').charAt(0);
         
-        // Update Stepper Visuals
-        document.querySelectorAll('.step-indicator').forEach((btn, index) => {
-            if (index + 1 <= step) {
-                btn.classList.remove('btn-secondary');
-                btn.classList.add('btn-primary');
-            } else {
-                btn.classList.remove('btn-primary');
-                btn.classList.add('btn-secondary');
+        let availabilityRules = JSON.parse(selected.getAttribute('data-slots'));
+        
+        // GRAB THE BOOKED SLOTS
+        let bookedSlots = JSON.parse(selected.getAttribute('data-booked'));
+        
+        let allowedDays = availabilityRules.map(rule => dayMap[rule.day]);
+
+        document.getElementById('timeSlotsContainer').innerHTML = "<p class='text-muted text-center'>Please select a date to view available times.</p>";
+        document.getElementById('appointmentDate').value = "";
+
+        if (datePickerInstance) datePickerInstance.destroy();
+        
+        datePickerInstance = flatpickr("#appointmentDate", {
+            minDate: "today",
+            enable: [ function(date) { return allowedDays.includes(date.getDay()); } ],
+            onChange: function(selectedDates, dateStr, instance) {
+                // PASS BOOKED SLOTS TO THE GENERATOR
+                generateTimeSlots(selectedDates[0], availabilityRules, bookedSlots);
             }
         });
+    }
+    
+    if (step === 3) {
+        let date = document.querySelector('input[name="date"]').value;
+        let slot = document.querySelector('input[name="slot"]:checked');
+        if (!date || !slot) return alert("Please select a date and a time slot.");
+    }
 
-        // Update progress line
-        let progress = (step - 1) * 50; 
-        document.getElementById('progressBar').style.width = `${progress}%`;
+    updateUI(step);
+}
+
+function generateTimeSlots(selectedDate, availabilityRules, bookedSlots) {
+    let container = document.getElementById('timeSlotsContainer');
+    container.innerHTML = "";
+
+    let dayOfWeekInt = selectedDate.getDay();
+    let dayName = Object.keys(dayMap).find(key => dayMap[key] === dayOfWeekInt);
+
+    let rule = availabilityRules.find(r => r.day === dayName);
+    if (!rule) return;
+
+    // Format the JS Date into YYYY-MM-DD so we can compare it to the database
+    let year = selectedDate.getFullYear();
+    let month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+    let day = String(selectedDate.getDate()).padStart(2, '0');
+    let datePrefix = `${year}-${month}-${day}`;
+
+    let startHour = parseInt(rule.start_time.split(':')[0]);
+    let endHour = parseInt(rule.end_time.split(':')[0]);
+
+    for (let h = startHour; h < endHour; h += 2) {
+        let ampm = h >= 12 ? 'pm' : 'am';
+        let displayHour = h % 12 || 12;
+        let slotLabel = `${displayHour}.00 ${ampm}`;
+
+        // Ensure hour string is 2 digits (e.g., "09" instead of "9")
+        let hourString = String(h).padStart(2, '0');
+        
+        // Check if ANY booked slot matches this specific date AND this specific hour
+        let isBooked = bookedSlots.some(booked => 
+            booked.includes(datePrefix) && booked.includes(`${hourString}:00:00`)
+        );
+
+        // Apply disabled styles if the slot is taken
+        let disabledAttr = isBooked ? "disabled" : "";
+        let btnClass = isBooked ? "btn-outline-secondary" : "btn-outline-primary";
+        let textClass = isBooked ? "text-decoration-line-through text-muted" : "";
+        let labelSuffix = isBooked ? "(Upcoming)" : "";
+
+        let html = `
+        <div class="col-12 col-md-6 mb-2">
+            <input type="radio" class="btn-check" name="slot" id="slot-${h}" value="${slotLabel}" ${disabledAttr} required>
+            <label class="btn ${btnClass} w-100 rounded-pill py-2 ${textClass}" for="slot-${h}">${slotLabel} ${labelSuffix}</label>
+        </div>`;
+        container.innerHTML += html;
+    }
+
+    if(container.innerHTML === "") {
+        container.innerHTML = "<p class='text-muted'>No slots fit this timeframe.</p>";
+    }
+}
+
+    function prevStep(step) { updateUI(step); }
+
+    function updateUI(step) {
+        document.querySelectorAll('.form-step').forEach(el => el.classList.add('d-none'));
+        document.getElementById(`step-${step}`).classList.remove('d-none');
+        
+        document.querySelectorAll('.step-indicator').forEach((btn, index) => {
+            btn.classList.toggle('btn-primary', index + 1 <= step);
+            btn.classList.toggle('btn-secondary', index + 1 > step);
+        });
+
+        document.getElementById('progressBar').style.width = `${(step - 1) * 50}%`;
     }
 </script>
 
 <style>
-    /* Custom radio button styling to make cards look selectable */
     .counselor-card:has(input:checked) {
         border: 2px solid #0d6efd;
         background-color: #f8f9fa;
