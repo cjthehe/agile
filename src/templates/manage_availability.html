@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid px-4 py-4" style="max-width: 1200px; margin: auto;">
+    
+    <div class="d-flex align-items-center mb-4">
+        <a href="/counselor/dashboard" class="btn btn-light rounded-circle shadow-sm me-3" title="Go Back">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <div>
+            <h3 class="fw-bold mb-1">Manage Schedule</h3>
+            <p class="text-muted mb-0">Define your weekly availability.</p>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Left: Add Working Hours -->
+        <div class="col-12 col-lg-5">
+            <div class="card border-0 rounded-4 shadow-sm h-100">
+                <div class="card-body p-4">
+                    <h6 class="fw-bold mb-3" style="color: var(--color-lavender);"><i class="bi bi-plus-circle me-2"></i>Add Working Hours</h6>
+                    
+                    <form method="POST" action="/manage-availability">
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-medium small text-muted">Day of the week</label>
+                            <select class="form-select rounded-3" name="day" required>
+                                <option value="" selected disabled>Select a day...</option>
+                                <option value="Monday">Monday</option>
+                                <option value="Tuesday">Tuesday</option>
+                                <option value="Wednesday">Wednesday</option>
+                                <option value="Thursday">Thursday</option>
+                                <option value="Friday">Friday</option>
+                                <option value="Saturday">Saturday</option>
+                                <option value="Sunday">Sunday</option>
+                            </select>
+                        </div>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-6">
+                                <label class="form-label fw-medium small text-muted">Start Time</label>
+                                <input type="time" class="form-control rounded-3" name="start_time" required>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fw-medium small text-muted">End Time</label>
+                                <input type="time" class="form-control rounded-3" name="end_time" required>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn w-100 rounded-pill fw-bold py-2 shadow-sm" style="background-color: var(--color-lavender); color: white;">
+                            Save Schedule
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Current Schedule -->
+        <div class="col-12 col-lg-7">
+            <h6 class="fw-bold mb-3 text-uppercase text-muted small">Current Schedule</h6>
+            
+            {% if schedule %}
+                <div style="max-height: 600px; overflow-y: auto;">
+                    {% for rule in schedule %}
+                    <div class="card border-0 rounded-4 shadow-sm mb-3" style="border-left: 4px solid var(--color-matcha);">
+                        <div class="card-body p-3 d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="fw-bold mb-0" style="color: var(--color-lavender);">{{ rule.day }}</h6>
+                                <small class="text-muted"><i class="bi bi-clock me-1"></i>{{ rule.start_time[:5] }} - {{ rule.end_time[:5] }}</small>
+                            </div>
+                            
+                            <form method="POST" action="/remove-availability/{{ rule.id }}" style="margin: 0;">
+                                <button type="submit" class="btn btn-outline-danger btn-sm rounded-circle" title="Remove rule" style="width: 35px; height: 35px;" onclick="return confirm('Are you sure you want to remove this working hour block?');">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center text-muted py-5 bg-light rounded-4 border">
+                    <i class="bi bi-calendar-x fs-2 d-block mb-2 opacity-50"></i>
+                    <small>You haven't set any working hours yet.</small>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+{% endblock %}

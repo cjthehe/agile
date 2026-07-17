@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<!-- Registration Card -->
+<div id="registerCard" class="card shadow">
+    <div class="card-body">
+        <h2 class="text-center mb-4">Create an Account</h2>
+
+        <form id="registerForm" onsubmit="event.preventDefault(); registerUser();">
+            <input
+                type="text"
+                id="registerName"
+                class="form-control mb-3"
+                placeholder="Full Name"
+                required>
+
+            <input
+                type="email"
+                id="registerEmail"
+                class="form-control mb-3"
+                placeholder="Email"
+                required>
+
+            <input
+                type="password"
+                id="registerPassword"
+                class="form-control mb-3"
+                placeholder="Password"
+                required>
+
+            <input
+                type="password"
+                id="registerConfirmPassword"
+                class="form-control mb-3"
+                placeholder="Confirm Password"
+                required>
+
+            <button type="submit" class="btn btn-success w-100">
+                Register
+            </button>
+        </form>
+
+        <p id="registerMessage" class="mt-3 text-center"></p>
+
+        <p class="text-center mt-3">
+            Already have an account?
+            <a href="/login">Login</a>
+        </p>
+    </div>
+</div>
+
+
+<!-- Verification Card -->
+<div id="verificationCard" class="card shadow mt-4 d-none">
+    <div class="card-body">
+
+        <h2 class="text-center mb-3">
+            Verify Your Email
+        </h2>
+
+        <p class="text-center">
+            Enter the verification code sent to your email.
+        </p>
+
+        <input
+            type="text"
+            id="verificationCode"
+            class="form-control mb-3"
+            placeholder="Verification Code">
+
+        <button
+            class="btn btn-primary w-100"
+            onclick="verifyEmail()">
+
+            Verify Email
+
+        </button>
+
+        <p
+            id="verificationMessage"
+            class="mt-3 text-center">
+
+        </p>
+
+    </div>
+</div>
+
+{% endblock %}

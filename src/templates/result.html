@@ -1,0 +1,346 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+    :root {
+        --color-oat: #E8DCC4;
+        --color-matcha: #A4C2A5;
+        --color-matcha-hover: #87a088;
+        --color-lavender: #A6A1BE;
+        --color-lilac: #DCD0E4;
+
+        --bg-card: #FFFFFF;
+        --text-main: #2D3748;
+        --text-muted: #718096;
+        --border-color: var(--color-lavender);
+        --radius-lg: 16px;
+        --radius-md: 12px;
+        --shadow-md: 0 10px 25px -5px rgba(166, 161, 190, 0.15);
+    }
+    
+    body {
+        background-color: #faf9f6 !important; 
+    }
+    
+    .wellbeing-page {
+        max-width: 700px; /* Widened slightly to fit history logs gracefully */
+        margin: 50px auto;
+        padding: 0 20px;
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    .page-header { 
+        text-align: center; 
+        margin-bottom: 28px; 
+    }
+    .page-header h2 { 
+        font-size: 2rem; 
+        font-weight: 800; 
+        color: var(--text-main);
+        letter-spacing: -0.02em;
+    }
+    .page-header p.text-secondary {
+        color: var(--text-muted) !important;
+        font-size: 1rem;
+    }
+
+    .wellbeing-card {
+        background: var(--bg-card); 
+        border: 1px solid var(--border-color) !important;
+        border-radius: var(--radius-lg) !important; 
+        padding: 32px !important; 
+        box-shadow: var(--shadow-md);
+    }
+
+    /* Polished Inner Presentation Box */
+    .result-box {
+        background: linear-gradient(135deg, #ffffff 0%, #fcfbfa 100%);
+        border: 1px solid rgba(166, 161, 190, 0.4); 
+        padding: 28px; 
+        border-radius: var(--radius-md); 
+        margin-bottom: 24px !important;
+        text-align: center;
+    }
+    
+    .result-box h4 { 
+        font-size: 2rem; 
+        font-weight: 800; 
+        color: var(--text-main); 
+        margin-top: 0;
+        margin-bottom: 16px; 
+        letter-spacing: -0.02em;
+    }
+    
+    /* Clean, spacious metric values */
+    .result-metrics {
+        font-size: 1.1rem;
+        color: var(--text-main);
+        margin-bottom: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+    .result-metrics strong { 
+        color: #333333; 
+        background: var(--color-lilac); 
+        padding: 6px 16px; 
+        border-radius: 20px;
+        font-weight: 700;
+        font-size: 0.95rem;
+        letter-spacing: 0.02em;
+    }
+    
+    .result-recommendation {
+        font-size: 1.05rem;
+        color: #4A5568;
+        line-height: 1.6;
+        margin: 16px 0 0 0;
+        font-style: italic;
+    }
+    
+    .result-box small.text-muted {
+        display: block;
+        color: var(--text-muted) !important;
+        font-size: 0.85rem;
+        margin-top: 24px;
+        font-weight: 500;
+    }
+
+    /* --- TIMELINE HISTORY COMPONENT --- */
+    .history-divider {
+        border-top: 2px dashed rgba(166, 161, 190, 0.3);
+        margin: 32px 0 24px 0;
+    }
+
+    .history-header {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--text-main);
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .history-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        max-height: 320px;
+        overflow-y: auto;
+        padding-right: 4px;
+    }
+
+    /* Custom Scrollbar styling for a premium look */
+    .history-list::-webkit-scrollbar {
+        width: 6px;
+    }
+    .history-list::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .history-list::-webkit-scrollbar-thumb {
+        background: var(--color-lavender);
+        border-radius: 10px;
+    }
+
+    .history-item {
+        background: #faf9f6;
+        border: 1px solid rgba(166, 161, 190, 0.25);
+        border-radius: var(--radius-md);
+        padding: 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: all 0.2s ease;
+    }
+
+    .history-item:hover {
+        transform: translateX(3px);
+        border-color: var(--color-matcha);
+        background-color: #f5f8f5;
+    }
+
+    .history-left {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .history-meta {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .score-badge {
+        background-color: var(--color-matcha);
+        color: #FFFFFF;
+        font-weight: 700;
+        font-size: 0.85rem;
+        padding: 3px 10px;
+        border-radius: 6px;
+    }
+
+    .category-badge {
+        background-color: var(--color-lilac);
+        color: #333333;
+        font-weight: 600;
+        font-size: 0.80rem;
+        padding: 3px 10px;
+        border-radius: 6px;
+    }
+
+    .history-time {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+    }
+
+    .history-rec {
+        font-size: 0.85rem;
+        color: #4A5568;
+        font-style: italic;
+        max-width: 250px;
+        text-align: right;
+    }
+
+    /* --- FIXED ACTION BUTTON CONTAINER --- */
+    .button-row { 
+        display: flex; 
+        flex-direction: column; 
+        gap: 12px; 
+        justify-content: stretch; 
+    }
+    .button-row-secondary { 
+        display: flex; 
+        justify-content: center; 
+        align-items: center;
+        gap: 12px; 
+        width: 100%; 
+    }
+    
+    /* --- UNIFIED SHARED RESULTS BUTTONS --- */
+    .button-row-secondary .btn {
+        flex: 1;
+        min-width: 210px; 
+        max-width: 240px; 
+        height: 52px;     
+        display: inline-flex; 
+        align-items: center; 
+        justify-content: center;
+        text-align: center;
+        font-size: 0.95rem; 
+        font-weight: 600;
+        border-radius: 8px !important; 
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        text-decoration: none; 
+        box-sizing: border-box;
+        padding: 0 16px !important;
+    }
+    
+    .btn-primary {
+        background-color: var(--color-matcha) !important;
+        border: 1px solid var(--color-matcha) !important;
+        color: #FFFFFF !important;
+        box-shadow: 0 4px 12px rgba(164, 194, 165, 0.25);
+    }
+    .btn-primary:hover {
+        background-color: var(--color-matcha-hover) !important;
+        border-color: var(--color-matcha-hover) !important;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(164, 194, 165, 0.35);
+    }
+    .btn-outline-secondary {
+        background: var(--bg-card) !important; 
+        color: #4A5568 !important;
+        border: 1px solid var(--border-color) !important;
+    }
+    .btn-outline-secondary:hover {
+        background: var(--color-lilac) !important;
+        border-color: var(--color-lavender) !important;
+        transform: translateY(-1px);
+    }
+
+    @media (max-width: 576px) {
+        .button-row-secondary { 
+            flex-direction: column-reverse; 
+            align-items: stretch;
+            gap: 10px; 
+        }
+        .button-row-secondary .btn {
+            width: 100%;
+            max-width: 100%;
+        }
+        .history-item {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        .history-rec {
+            text-align: left;
+            max-width: 100%;
+        }
+    }
+</style>
+
+<div class="wellbeing-page">
+    <div class="page-header mb-4">
+        <h2>Assessment Result</h2>
+        <p class="text-secondary">Review your score and suggestions for the next step.</p>
+    </div>
+
+    <div class="card wellbeing-card p-4">
+        <!-- Newest score panel -->
+        <div class="result-box mb-4">
+            <h4>Score: {{ result.score }}</h4>
+            
+            <div class="result-metrics">
+                <span>Category:</span>
+                <strong>{{ result.category }}</strong>
+            </div>
+            
+            <p class="result-recommendation">“{{ result.recommendation }}”</p>
+            
+            <small class="text-muted">🕒 Logged on {{ result.datetime }}</small>
+        </div>
+
+        <!-- Navigation Buttons -->
+        <div class="button-row">
+            <div class="button-row-secondary">
+                <a class="btn btn-outline-secondary" href="/wellbeing">Back to Wellbeing Tracking</a>
+                <a class="btn btn-primary" href="/questionnaire">🔄 Take Assessment Again</a>
+            </div>
+        </div>
+
+        <!-- Historical Log Timeline Section -->
+        <div class="history-divider"></div>
+        
+        <h5 class="history-header">
+            <span>🌿</span> Historical Assessment Logs
+        </h5>
+
+        <div class="history-list">
+            {% if history %}
+                {% for log in history %}
+                    <div class="history-item">
+                        <div class="history-left">
+                            <div class="history-meta">
+                                <span class="score-badge">Score: {{ log.score }}</span>
+                                <span class="category-badge">{{ log.category }}</span>
+                            </div>
+                            <span class="history-time">🕒 {{ log.datetime }}</span>
+                        </div>
+                        <div class="history-rec">
+                            "{{ log.recommendation }}"
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-center text-muted py-3">No past records stored yet.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
