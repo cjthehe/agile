@@ -152,25 +152,42 @@
         box-shadow: inset 0 0 0 4px var(--card-bg); 
     }
 
+    /* --- CENTERED BUTTON ROW CONTAINER --- */
     .form-actions { 
         display: flex; 
-        justify-content: flex-end; 
+        justify-content: center; 
         align-items: center; 
         gap: 12px; 
         margin-top: 24px; 
         padding-bottom: 40px; 
     }
     
+    /* --- UNIFIED SHARED BUTTON DIMENSIONS --- */
+    .btn-submit-assessment, 
+    .btn-back-home, 
+    .btn-view-history {
+        flex: 1;
+        min-width: 210px; /* Ensures text has room to breathe */
+        max-width: 240px; /* Stops buttons from expanding too wide on ultra-wide viewports */
+        height: 52px;     /* Guarantees identical vertical alignment */
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        box-sizing: border-box;
+        font-size: 0.95rem;
+        font-weight: 600;
+        border-radius: 8px;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        padding: 0 16px !important; /* Strips internal padding variances */
+    }
+
     .btn-submit-assessment {
         background-color: var(--color-matcha) !important; 
         color: #ffffff !important; 
         border: 1px solid var(--color-matcha) !important; 
-        padding: 14px 32px;
-        font-size: 0.95rem; 
-        font-weight: 600; 
-        border-radius: 8px; 
         cursor: pointer;
-        transition: all 0.2s ease;
         box-shadow: 0 4px 12px rgba(164, 194, 165, 0.25);
     }
     .btn-submit-assessment:hover { 
@@ -182,22 +199,33 @@
         background: var(--card-bg); 
         border: 1px solid var(--border-default);
         color: var(--text-secondary); 
-        padding: 14px 24px; 
-        font-size: 0.95rem;
-        border-radius: 8px; 
-        text-decoration: none; 
-        font-weight: 500;
-        transition: all 0.2s ease;
     }
-    
     .btn-back-home:hover { 
         background-color: var(--color-lavender) !important; 
         color: #ffffff !important; 
     }
 
-    @media (max-width: 600px) {
-        .form-actions { flex-direction: column-reverse; align-items: stretch; }
-        .btn-submit-assessment, .btn-back-home { width: 100%; text-align: center; }
+    .btn-view-history {
+        background: var(--card-bg); 
+        border: 1px solid var(--border-default);
+        color: var(--text-secondary); 
+    }
+    .btn-view-history:hover { 
+        background-color: var(--color-lilac) !important; 
+        color: var(--text-primary) !important; 
+    }
+
+    @media (max-width: 768px) {
+        .form-actions { 
+            flex-direction: column-reverse; 
+            align-items: stretch; 
+            gap: 10px;
+        }
+        .btn-submit-assessment, .btn-back-home, .btn-view-history { 
+            width: 100%; 
+            max-width: 100%; /* Spans full width gracefully on mobile screens */
+            text-align: center; 
+        }
     }
 </style>
 
@@ -235,6 +263,7 @@
 
             <div class="form-actions">
                 <a class="btn-back-home" href="/wellbeing">Back to Wellbeing Tracking</a>
+                <a class="btn-view-history" href="/result">View Result History</a>
                 <button type="submit" class="btn btn-submit-assessment">Save Assessment</button>
             </div>
         </form>
