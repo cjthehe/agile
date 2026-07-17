@@ -10,21 +10,9 @@ wellbeing_bp = Blueprint("wellbeing", __name__, template_folder="templates", sta
 def get_current_user_id():
     """
     Retrieves the authentic logged-in user's ID directly from the secure session.
-    If no session exists, it returns None to force proper login redirections.
+    If no session exists, it falls back safely to None or forces a redirect.
     """
     return session.get("user_id")
-
-
-def calculate_metrics(score):
-    """
-    Helper helper to consistently map a numerical score to categories and suggestions.
-    """
-    if score <= 4:
-        return "Good", "Keep maintaining your healthy lifestyle."
-    elif score <= 8:
-        return "Moderate", "Take breaks and practice relaxation."
-    else:
-        return "Needs Attention", "Consider talking with a counselor."
 
 
 @wellbeing_bp.route("/wellbeing", methods=["GET"])
@@ -43,7 +31,6 @@ def wellbeing():
 def mood_page():
     """
     Renders the Daily Mood Logger entry form and history list panel (mood.html).
-    Accepts POST requests to handle form submittals smoothly.
     """
     user_id = get_current_user_id()
     if not user_id:
@@ -78,7 +65,7 @@ def mood_page():
         response = (
             supabase.table("mood_logs")
             .select("mood, created_at, notes")
-            .eq("user_id", user_id)  # Strict user data isolation
+            .eq("user_id", user_id)  # Strict user scope isolation
             .order("created_at", desc=True)
             .execute()
         )
@@ -97,6 +84,7 @@ def mood_page():
     except Exception as e:
         print(f"Error retrieving mood logs: {e}")
 
+    # FIXED: Corrected rendering target name to serve the actual logging page template
     return render_template("mood.html", success=success, records=records)
 
 
@@ -148,61 +136,54 @@ def questionnaire():
 @wellbeing_bp.route("/result")
 def result():
     """
-    Renders personal feedback metrics for the user's latest assessment,
-    falling back to their overall newest record if session cache is empty.
+    Renders personal feedback metrics for the user's latest assessment.
     """
     user_id = get_current_user_id()
     if not user_id:
         return redirect(url_for("auth.login_page"))
 
+    assessment_id = session.get("latest_assessment_id")
+    if not assessment_id:
+        return redirect(url_for("wellbeing.questionnaire"))
+
     try:
-        # 1. Fetch ALL historical assessments for this user first
-        history_response = (
+        # FIXED: Enforced a dual-key matching constraint so users can't view others' logs
+        response = (
             supabase.table("assessments")
             .select("*")
+            .eq("id", assessment_id)
             .eq("user_id", user_id)
-            .order("created_at", desc=True)
+            .single()
             .execute()
         )
 
-        # If they have absolutely no history, redirect them to take it for the first time
-        if not history_response.data:
+        data = response.data
+        if not data:
             return redirect(url_for("wellbeing.questionnaire"))
 
-        history_records = []
-        for item in history_response.data:
-            hist_score = item["score"]
-            hist_cat, hist_rec = calculate_metrics(hist_score)
+        score = data["score"]
 
-            hist_dt_parsed = datetime.fromisoformat(item["created_at"].replace("Z", "+00:00"))
-            hist_local_dt = hist_dt_parsed.astimezone()
+        if score <= 4:
+            category = "Good"
+            recommendation = "Keep maintaining your healthy lifestyle."
+        elif score <= 8:
+            category = "Moderate"
+            recommendation = "Take breaks and practice relaxation."
+        else:
+            category = "Needs Attention"
+            recommendation = "Consider talking with a counselor."
 
-            history_records.append(
-                {
-                    "id": item["id"],
-                    "score": hist_score,
-                    "category": hist_cat,
-                    "recommendation": hist_rec,
-                    "datetime": hist_local_dt.strftime("%d/%m/%Y %H:%M"),
-                }
-            )
+        dt_parsed = datetime.fromisoformat(data["created_at"].replace("Z", "+00:00"))
+        local_dt = dt_parsed.astimezone()
 
-        # 2. Determine which assessment to highlight in the top presentation box
-        assessment_id = session.get("latest_assessment_id")
-        latest_result = None
+        latest_result = {
+            "score": score,
+            "category": category,
+            "recommendation": recommendation,
+            "datetime": local_dt.strftime("%d/%m/%Y %H:%M"),
+        }
 
-        if assessment_id:
-            # If they just finished one, match it from the records
-            latest_result = next(
-                (item for item in history_records if item["id"] == assessment_id), None
-            )
-
-        # FALLBACK: If they just clicked "View Assessment History",
-        # highlight their most recent entry
-        if not latest_result and history_records:
-            latest_result = history_records[0]
-
-        return render_template("result.html", result=latest_result, history=history_records)
+        return render_template("result.html", result=latest_result)
 
     except Exception as e:
         print(f"Error retrieving results: {e}")

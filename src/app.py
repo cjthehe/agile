@@ -2,6 +2,7 @@ from datetime import datetime
 
 from flask import Flask, flash, redirect, render_template, request, url_for  # type: ignore[import]
 
+from admin import admin as admin_blueprint
 from appointment_booking import (
     add_counselor_availability,
     cancel_appointment,
@@ -18,11 +19,14 @@ from appointment_booking import (
 from auth import auth as auth_blueprint
 from database import supabase
 from register import register as register_blueprint
+from wellbeing_tracking import wellbeing_bp
 
 app = Flask(__name__)
 app.secret_key = "your_secret_key"  # Required for flash messages
 app.register_blueprint(auth_blueprint)
 app.register_blueprint(register_blueprint)
+app.register_blueprint(wellbeing_bp)
+app.register_blueprint(admin_blueprint)
 
 
 # Add custom strftime filter for Jinja2
@@ -194,3 +198,7 @@ def handle_cancellation(appointment_id):
         flash("There was an error cancelling your appointment. Please try again.", "danger")
 
     return redirect(url_for("appointment_dashboard"))
+
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, debug=True)
