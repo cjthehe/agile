@@ -1,14 +1,14 @@
 from uuid import uuid4
 
 from flask import Blueprint, jsonify, redirect, render_template, request, session, url_for
+from supabase import Client
 
-# Import your Supabase client
 try:
     from database import supabase
 
     HAS_SUPABASE = True
 except (ImportError, ValueError, RuntimeError):
-    supabase = None
+    supabase: Client | None = None
     HAS_SUPABASE = False
 
 
