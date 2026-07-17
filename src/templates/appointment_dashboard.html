@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+    #pills-tab .nav-link.rounded-pill:last-child.active {
+        background-color: transparent !important;
+        color: var(--color-matcha) !important;
+        border: 2px solid var(--color-matcha) !important;
+    }
+</style>
+
+<div class="container-fluid px-4 py-4" style="max-width: 1200px; margin: auto;">
+    
+    <div class="mb-4">
+        <h4 class="fw-bold mb-0">Good Afternoon, Jt 👋</h4>
+        <p class="text-muted">Manage your therapy sessions</p>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-md-4">
+            <div class="card border-0 rounded-4 h-100 text-center py-3 shadow-sm" style="background-color: white;">
+                <i class="bi bi-clock" style="font-size: 1.5rem; color: var(--color-matcha); margin-bottom: 0.5rem;"></i>
+                <small class="d-block small" style="color: var(--color-matcha);">Upcoming</small>
+                <h4 class="mb-0 fw-bold" style="color: var(--color-matcha);">{{ upcoming_count }}</h4>
+            </div>
+        </div>
+        <div class="col-12 col-md-4">
+            <div class="card border-0 rounded-4 h-100 text-center py-3 shadow-sm" style="background-color: white;">
+                <i class="bi bi-check-circle" style="font-size: 1.5rem; color: var(--color-lavender); margin-bottom: 0.5rem;"></i>
+                <small class="d-block small" style="color: var(--color-lavender);">Completed</small>
+                <h4 class="mb-0 fw-bold" style="color: var(--color-lavender);">{{ completed_count }}</h4>
+            </div>
+        </div>
+        <div class="col-12 col-md-4">
+            <div class="card border-0 rounded-4 h-100 text-center py-3 shadow-sm" style="background-color: white;">
+                <i class="bi bi-calendar-check" style="font-size: 1.5rem; color: #8b7d5f; margin-bottom: 0.5rem;"></i>
+                <small class="d-block small" style="color: #8b7d5f;">Total Sessions</small>
+                <h4 class="mb-0 fw-bold" style="color: #8b7d5f;">{{ (upcoming_count + completed_count) }}</h4>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex gap-2 mb-4">
+        <a href="/book" class="btn btn-primary flex-grow-1 rounded-pill py-2 fw-bold shadow-sm">Book Appointment</a>
+        <a href="/availability" class="btn btn-outline-secondary flex-grow-1 rounded-pill py-2 fw-bold shadow-sm">View Availability</a>
+    </div>
+
+    <ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
+        <li class="nav-item"><button class="nav-link active rounded-pill fw-bold" data-bs-toggle="pill" data-bs-target="#upcoming" style="background-color: var(--color-lavender); color: white;">Upcoming</button></li>
+        <li class="nav-item"><button class="nav-link rounded-pill fw-bold" data-bs-toggle="pill" data-bs-target="#history" style="color: var(--color-matcha); border: 2px solid var(--color-matcha);">History</button></li>
+    </ul>
+
+    <div class="tab-content">
+        <div class="tab-pane fade show active" id="upcoming">
+            {% for apt in upcoming_appointments %}
+            <div class="card border-0 rounded-4 shadow-sm mb-3" style="border-left: 4px solid var(--color-matcha);">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" 
+                             style="width: 40px; height: 40px; background-color: var(--color-matcha); color: white; font-weight: bold; font-size: 0.9rem;">
+                            {{ apt.therapist.name[0].upper() if apt.therapist else 'T' }}
+                        </div>
+                        <div>
+                            <h6 class="fw-bold mb-0" style="color: var(--color-lavender);">{{ apt.therapist.name if apt.therapist else 'Therapist' }}</h6>
+                            <small class="text-muted">Therapist</small>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <small class="d-block text-muted mb-1">
+                            📅 {{ apt.date_time[:10] }} at {{ apt.date_time[11:16] }}
+                        </small>
+                        <small class="d-block text-muted">
+                            {% if apt.appointment_type == 'Phone Call' %}
+                                📞 Phone Call
+                            {% else %}
+                                👥 In-Person Session
+                            {% endif %}
+                        </small>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm rounded-pill fw-bold" style="background-color: var(--color-mint); color: #333;">Reschedule</button>
+                        <button type="button" class="btn btn-sm btn-outline-danger rounded-pill fw-bold" onclick="prepareCancelModal('{{ apt.id }}')">Cancel</button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="tab-pane fade" id="history">
+            {% for apt in completed_appointments %}
+            <div class="card border-0 rounded-4 shadow-sm mb-3" style="border-left: 4px solid var(--color-lavender);">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" 
+                             style="width: 40px; height: 40px; background-color: var(--color-lavender); color: white; font-weight: bold; font-size: 0.9rem;">
+                            {{ apt.therapist.name[0].upper() if apt.therapist else 'T' }}
+                        </div>
+                        <div>
+                            <h6 class="fw-bold mb-0" style="color: var(--color-lavender);">{{ apt.therapist.name if apt.therapist else 'Therapist' }}</h6>
+                            <small class="text-muted">Therapist</small>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <small class="d-block text-muted mb-1">
+                            📅 {{ apt.date_time[:10] }}
+                        </small>
+                        <small class="d-block text-muted">
+                            ✔ {{ apt.appointment_type }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="text-center mt-3">
+        <a href="/appointments" class="btn btn-outline-secondary text-muted">View All Appointments</a>
+    </div>
+</div>
+
+<div class="modal fade" id="cancelModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow" style="background-color: #faf9f6; border-top: 4px solid var(--color-lavender);">
+            <form id="cancelForm" method="POST">
+                <div class="modal-body p-4">
+                    <h5 class="fw-bold" style="color: var(--color-lavender);">Cancel Appointment</h5>
+                    <p class="text-muted small">Why are you cancelling?</p>
+                    <textarea name="reason" class="form-control rounded-3" required style="border-color: var(--color-mint);"></textarea>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-light rounded-pill" data-bs-dismiss="modal">Keep</button>
+                    <button type="submit" class="btn btn-danger rounded-pill">Confirm</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function prepareCancelModal(id) {
+        document.getElementById('cancelForm').action = '/cancel/' + id;
+        new bootstrap.Modal(document.getElementById('cancelModal')).show();
+    }
+</script>
+{% endblock %}
