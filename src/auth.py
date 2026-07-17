@@ -1,16 +1,14 @@
+from typing import Optional
 from uuid import uuid4
 from typing import Any
 from flask import Blueprint, jsonify, redirect, render_template, request, session, url_for
-
-# 1. Provide an explicit fallback assignment hint so mypy knows this variable can be None
-supabase: Any = None
-HAS_SUPABASE = False
+from supabase import Client
 
 try:
-    from database import supabase as sb
-    if sb is not None:
-        supabase = sb
-        HAS_SUPABASE = True
+    import database
+
+    supabase: Optional[Client] = database.supabase
+    HAS_SUPABASE = True
 except (ImportError, ValueError, RuntimeError):
     pass
 
