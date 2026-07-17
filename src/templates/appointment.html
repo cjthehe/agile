@@ -1,87 +1,144 @@
 {% extends "base.html" %}
 
 {% block content %}
-<!-- Main Appointments Table Card -->
-<div class="card shadow mb-4">
-    <div class="card-header bg-success text-white">
-        <h4 class="mb-0">Appointments</h4>
+
+<div class="container-fluid px-4 py-4" style="max-width: 1200px; margin: auto;">
+    
+    <!-- Back Button -->
+    <button class="btn btn-link text-dark text-decoration-none p-0 mb-4" onclick="history.back()">
+        <i class="bi bi-arrow-left me-2"></i>Back
+    </button>
+
+    <!-- Header -->
+    <div class="mb-4">
+        <h3 class="fw-bold mb-1" style="color: var(--color-lavender);">Appointment History</h3>
+        <p class="text-muted">View all your past and upcoming therapy sessions</p>
     </div>
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-striped align-middle">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Patient</th>
-                        <th>Counselor</th>
-                        <th>Date</th>
-                        <th>Time</th>
-                        <th>Status</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for appointment in appointments %}
-                    <tr>
-                        <td>{{ loop.index }}</td>
-                        <td>{{ appointment.user.username }}</td>
-                        <td>{{ appointment.therapist.name }}</td>
-                        <td>{{ appointment.date_time[:10] }}</td>
-                        <td>{{ appointment.date_time[11:16] }}</td>
-                        
-                        <!-- Status Badges -->
-                        <td>
+
+    <!-- Filter Divider -->
+    <hr style="border-top: 2px solid var(--color-mint);" class="mb-4">
+
+    <!-- Filter Tabs -->
+    <div class="d-flex gap-3 mb-4 flex-wrap">
+        <button class="btn btn-sm fw-bold rounded-pill" id="filterAll" onclick="filterAppointments('all')" 
+                style="background-color: var(--color-lavender); color: white;">
+            All ({{ appointments|length }})
+        </button>
+        <button class="btn btn-sm fw-bold rounded-pill" id="filterUpcoming" onclick="filterAppointments('upcoming')" 
+                style="background-color: transparent; color: var(--color-matcha); border: 2px solid var(--color-matcha);">
+            Upcoming
+        </button>
+        <button class="btn btn-sm fw-bold rounded-pill" id="filterCompleted" onclick="filterAppointments('completed')" 
+                style="background-color: transparent; color: var(--color-lavender); border: 2px solid var(--color-lavender);">
+            Completed
+        </button>
+        <button class="btn btn-sm fw-bold rounded-pill" id="filterCancelled" onclick="filterAppointments('cancelled')" 
+                style="background-color: transparent; color: #dc3545; border: 2px solid #dc3545;">
+            Cancelled
+        </button>
+    </div>
+
+    <!-- Filter Divider -->
+    <hr style="border-top: 2px solid var(--color-mint);" class="mb-4">
+
+    <!-- Appointments Container -->
+    <div id="appointmentsContainer">
+        {% if appointments %}
+            {% set currentMonth = None %}
+            {% for appointment in appointments %}
+                {% set appointmentMonth = appointment.date_time[:7] %}
+                
+                <!-- Month Header -->
+                {% if appointmentMonth != currentMonth %}
+                    {% if currentMonth is not none %}
+                        </div>
+                    {% endif %}
+                    <div class="mb-4">
+                        <h5 class="fw-bold mb-3" style="color: var(--color-lavender);">
+                            📅 {{ appointment.date_time | strftime('%B %Y') }}
+                        </h5>
+                    {% set currentMonth = appointmentMonth %}
+                {% endif %}
+
+                <!-- Appointment Card -->
+                <div class="card border-0 rounded-4 shadow-sm mb-3 appointmentCard" data-status="{{ appointment.status.lower() }}">
+                    <div class="card-body p-4">
+                        <!-- Status Badge -->
+                        <div class="mb-3">
                             {% if appointment.status == "Upcoming" %}
-                                <span class="badge bg-primary">{{ appointment.status }}</span>
+                                <span class="badge" style="background-color: var(--color-matcha); color: white; font-size: 0.85rem;">
+                                    🟢 Upcoming
+                                </span>
                             {% elif appointment.status == "Completed" %}
-                                <span class="badge bg-success">{{ appointment.status }}</span>
+                                <span class="badge" style="background-color: var(--color-lavender); color: white; font-size: 0.85rem;">
+                                    ✔ Completed
+                                </span>
                             {% elif appointment.status == "Cancelled" %}
-                                <span class="badge bg-danger">{{ appointment.status }}</span>
-                            {% else %}
-                                <span class="badge bg-secondary">{{ appointment.status }}</span>
+                                <span class="badge bg-danger" style="font-size: 0.85rem;">
+                                    ✕ Cancelled
+                                </span>
                             {% endif %}
-                        </td>
-                        
-                        <td>
-                            {% if appointment.status == "Upcoming" %}
-                            <button
-                                type="button"
-                                class="btn btn-danger btn-sm rounded-pill px-3"
-                                data-bs-toggle="modal"
-                                data-bs-target="#cancelModal"
-                                onclick="prepareCancelModal('{{ appointment.id }}')">
+                        </div>
+
+                        <!-- Therapist Info -->
+                        <div class="mb-3 d-flex align-items-center gap-3">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center" 
+                                 style="width: 40px; height: 40px; background-color: var(--color-lavender); color: white; font-weight: bold; font-size: 0.9rem;">
+                                {{ appointment.therapist.name[0].upper() }}
+                            </div>
+                            <div>
+                                <h6 class="fw-bold mb-1" style="color: var(--color-lavender);">
+                                    {{ appointment.therapist.name }}
+                                </h6>
+                                <small class="text-muted">{{ appointment.therapist.specialization if appointment.therapist.specialization else 'Therapist' }}</small>
+                            </div>
+                        </div>
+
+                        <!-- Appointment Details -->
+                        <div class="mb-3">
+                            <small class="d-block text-muted mb-1">
+                                📅 {{ appointment.date_time[:10] }}
+                                <span class="ms-3">🕒 {{ appointment.date_time[11:16] }}</span>
+                            </small>
+                            <small class="d-block text-muted">
+                                👥 {{ appointment.appointment_type if appointment.appointment_type else 'Session' }}
+                            </small>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        {% if appointment.status == "Upcoming" %}
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-sm rounded-pill fw-bold" 
+                                    style="background-color: var(--color-mint); color: #333;">
+                                Reschedule
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger rounded-pill fw-bold"
+                                    onclick="prepareCancelModal('{{ appointment.id }}')">
                                 Cancel
                             </button>
-                            {% else %}
-                            -
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                    
-                    <!-- Fallback if there are no appointments -->
-                    {% if not appointments %}
-                    <tr>
-                        <td colspan="7" class="text-center py-4 text-muted">
-                            No appointments found.
-                        </td>
-                    </tr>
-                    {% endif %}
-                </tbody>
-            </table>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+            </div>
+        {% else %}
+        <div class="text-center py-5">
+            <p class="text-muted">No appointments found.</p>
         </div>
+        {% endif %}
     </div>
+
 </div>
 
 <!-- ==================== CANCELLATION MODAL ==================== -->
-<!-- This modal stays hidden until the user clicks the cancel button -->
 <div class="modal fade" id="cancelModal" tabindex="-1" aria-labelledby="cancelModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
+        <div class="modal-content border-0 shadow rounded-4" style="border-top: 4px solid var(--color-lavender);">
             
             <form id="cancelForm" method="POST" action="">
-                <div class="modal-header bg-danger bg-opacity-10 text-danger border-0">
-                    <h5 class="modal-title fw-bold" id="cancelModalLabel">Confirm Cancellation</h5>
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-bold" id="cancelModalLabel" style="color: var(--color-lavender);">Confirm Cancellation</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 
@@ -89,14 +146,17 @@
                     <p class="mb-3 text-dark">Are you sure you want to cancel this appointment? This action cannot be undone.</p>
                     
                     <div class="mb-3">
-                        <label for="cancelReason" class="form-label fw-bold">Reason for cancellation</label>
-                        <textarea class="form-control" id="cancelReason" name="reason" rows="3" placeholder="Please let us know why you need to cancel..." required></textarea>
+                        <label for="cancelReason" class="form-label fw-bold" style="color: var(--color-lavender);">Reason for cancellation</label>
+                        <textarea class="form-control rounded-3" id="cancelReason" name="reason" rows="3" 
+                                  placeholder="Please let us know why you need to cancel..." required 
+                                  style="border-color: var(--color-mint);"></textarea>
                     </div>
                 </div>
                 
-                <div class="modal-footer border-0 bg-light">
-                    <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Keep Appointment</button>
-                    <button type="submit" class="btn btn-danger rounded-pill px-4">Confirm Cancellation</button>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn rounded-pill px-4 fw-bold" data-bs-dismiss="modal" 
+                            style="background-color: var(--color-mint); color: #333;">Keep Appointment</button>
+                    <button type="submit" class="btn btn-danger rounded-pill px-4 fw-bold">Confirm Cancellation</button>
                 </div>
             </form>
             
@@ -106,11 +166,39 @@
 
 <script>
     function prepareCancelModal(appointmentId) {
-        // Update the form's destination URL to include the specific appointment ID
         document.getElementById('cancelForm').action = '/cancel/' + appointmentId;
-            
-        // Clear out the text box in case they opened it previously
         document.getElementById('cancelReason').value = '';
+        new bootstrap.Modal(document.getElementById('cancelModal')).show();
+    }
+
+    function filterAppointments(status) {
+        // Update active filter button
+        document.querySelectorAll('[id^="filter"]').forEach(btn => {
+            btn.style.backgroundColor = 'transparent';
+            btn.style.borderColor = btn.style.color;
+            btn.style.color = btn.id === 'filterAll' ? 'var(--color-matcha)' : 
+                              btn.id === 'filterUpcoming' ? 'var(--color-matcha)' :
+                              btn.id === 'filterCompleted' ? 'var(--color-lavender)' : '#dc3545';
+        });
+
+        const activeBtn = document.getElementById('filter' + status.charAt(0).toUpperCase() + status.slice(1));
+        if (activeBtn) {
+            activeBtn.style.backgroundColor = status === 'all' ? 'var(--color-lavender)' :
+                                             status === 'upcoming' ? 'var(--color-matcha)' :
+                                             status === 'completed' ? 'var(--color-lavender)' : '#dc3545';
+            activeBtn.style.color = 'white';
+            activeBtn.style.border = 'none';
+        }
+
+        // Filter cards
+        const cards = document.querySelectorAll('.appointmentCard');
+        cards.forEach(card => {
+            if (status === 'all') {
+                card.style.display = 'block';
+            } else {
+                card.style.display = card.getAttribute('data-status') === status ? 'block' : 'none';
+            }
+        });
     }
 </script>
 
