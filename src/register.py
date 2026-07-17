@@ -4,6 +4,9 @@ import secrets
 import smtplib
 from email.message import EmailMessage
 
+# Added typing utilities for mypy compliance
+from typing import Any, cast
+
 from flask import Blueprint, jsonify, render_template, request, url_for
 from werkzeug.security import generate_password_hash
 
@@ -218,20 +221,22 @@ def register_user():
     )
 
 
-def get_local_user(email: str) -> dict | None:
+# Updated return type annotation to dict[Any, Any] | None to match find_user requirements
+def get_local_user(email: str) -> dict[Any, Any] | None:
     local_user = fallback_patients.get(email)
     if local_user:
-        return local_user
+        return cast(dict[Any, Any], local_user)
 
     try:
         from admin import fallback_counselors
 
-        return fallback_counselors.get(email)
+        return cast(dict[Any, Any], fallback_counselors.get(email))
     except Exception:
         return None
 
 
-def find_user(email: str) -> dict | None:
+# Updated return type annotation and added typing cast for the Supabase response payload
+def find_user(email: str) -> dict[Any, Any] | None:
     if supabase is not None:
         try:
             response = (
@@ -241,7 +246,7 @@ def find_user(email: str) -> dict | None:
                 .execute()
             )
             if response.data:
-                return response.data[0]
+                return cast(dict[Any, Any], response.data[0])
         except Exception:
             pass
 
