@@ -21,10 +21,11 @@ function updateAuthButtons() {
 document.addEventListener("DOMContentLoaded", () => {
     updateAuthButtons();
 
+    const logoutButton = document.getElementById('logoutButton');
     if (logoutButton) {
         logoutButton.addEventListener("click", async (event) => {
             event.preventDefault();
-            await logoutUser();
+            await logout(event);
         });
     }
 });
@@ -73,68 +74,6 @@ async function registerUser() {
     messageBox.textContent = 'Registration failed';
     messageBox.className = 'text-danger mt-3 text-center';
   }
-}
-
-async function verifyEmail() {
-
-    const email = localStorage.getItem("verification_email");
-
-    const code = document
-        .getElementById("verificationCode")
-        .value;
-
-    const message = document
-        .getElementById("verificationMessage");
-
-    try {
-
-        const response = await fetch("/api/verify-email", {
-
-            method: "POST",
-
-            headers: {
-                "Content-Type": "application/json"
-            },
-
-            body: JSON.stringify({
-
-                email: email,
-
-                verification_code: code
-
-            })
-
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-
-            message.textContent = data.message;
-            message.className = "text-success mt-3 text-center";
-
-            localStorage.removeItem("verification_email");
-
-            setTimeout(() => {
-
-                window.location.href = "/login";
-
-            }, 2000);
-
-        } else {
-
-            message.textContent = data.message;
-            message.className = "text-danger mt-3 text-center";
-
-        }
-
-    } catch (error) {
-
-        message.textContent = "Verification failed.";
-        message.className = "text-danger mt-3 text-center";
-
-    }
-
 }
 
 async function verifyEmail() {

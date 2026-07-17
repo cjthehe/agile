@@ -1,6 +1,14 @@
 from datetime import datetime
 
-from flask import Flask, flash, redirect, render_template, request, url_for  # type: ignore[import]
+from flask import (  # type: ignore[import]
+    Flask,
+    flash,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for,
+)
 
 from admin import admin as admin_blueprint
 from appointment_booking import (
@@ -47,10 +55,10 @@ def home_page():
 # APPOINTMENT DASHBOARD
 @app.route("/dashboard")
 def appointment_dashboard():
-    # Hardcoded for current sprint (User 13)
-    user_id = 13
+    user_id = session.get("user_id")
+    if not user_id:
+        return redirect(url_for("auth.login_page"))
 
-    # Call the new function
     dashboard_data = get_dashboard_appointments(user_id)
 
     # Pass the unpacked dictionary to Jinja
@@ -144,8 +152,17 @@ def handle_booking():
         slot = request.form.get("slot")
         appointment_type = request.form.get("appointment_type")
 
-        # Call the Supabase function we built earlier
-        new_apt = create_appointment(therapist_id, date_str, slot, appointment_type)
+        user_id = session.get("user_id")
+        if not user_id:
+            return redirect(url_for("auth.login_page"))
+
+        new_apt = create_appointment(
+            therapist_id,
+            date_str,
+            slot,
+            appointment_type,
+            user_id=user_id,
+        )
 
         if new_apt:
             flash("Appointment successfully booked!", "success")
@@ -175,7 +192,11 @@ def handle_booking():
 # APPOINTMENT LIST
 @app.route("/appointments")
 def appointments():
-    appointments = get_all_appointments(13)
+    user_id = session.get("user_id")
+    if not user_id:
+        return redirect(url_for("auth.login_page"))
+
+    appointments = get_all_appointments(user_id)
 
     print(appointments)
 

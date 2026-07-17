@@ -350,20 +350,37 @@ def remove_counselor_availability(rule_id):
 
 
 # APPOINTMENT CREATION & CANCELLATION
-def create_appointment(therapist_id, date_str, slot, appointment_type):
-    user_id = 13
+def create_appointment(therapist_id, date_str, slot, appointment_type, user_id=None):
+    if user_id is None:
+        user_id = 155
 
     try:
         raw_datetime = f"{date_str} {slot.upper()}"
         parsed_dt = datetime.strptime(raw_datetime, "%Y-%m-%d %I.%M %p")
         db_date_time = parsed_dt.strftime("%Y-%m-%d %H:%M:%S")
+
     except Exception as e:
         print(f"Error converting date format: {e}")
         return None
 
-    # UPGRADED: Check if the slot is taken by ANYONE
+    # Validation 1: therapist must exist
+    if therapist_id is None:
+        print("Invalid therapist.")
+        return None
+
+    # Validation 2: cannot book past date/time
+    if parsed_dt < datetime.now():
+        print("Cannot book an appointment in the past.")
+        return None
+
+    # Validation 3: user already has an appointment at this time
+    if check_user_slot_taken(user_id, db_date_time):
+        print("You already have an appointment at this time.")
+        return None
+
+    # Validation 4: counselor already booked
     if check_slot_taken(therapist_id, db_date_time):
-        print("Slot is already booked by someone else. Aborting.")
+        print("Slot is already booked.")
         return None
 
     try:
@@ -383,10 +400,28 @@ def create_appointment(therapist_id, date_str, slot, appointment_type):
 
         if response.data:
             return response.data[0]
+
         return None
+
     except Exception as e:
         print(f"Error creating appointment in Supabase: {e}")
         return None
+
+
+def check_user_slot_taken(user_id, date_time):
+    response = (
+        supabase.table("appointment")
+        .select("*")
+        .eq("user_id", user_id)
+        .eq("date_time", date_time)
+        .neq("status", "Cancelled")
+        .execute()
+    )
+
+    print("Searching:", user_id, date_time)
+    print("Found:", response.data)
+
+    return len(response.data) > 0
 
 
 def cancel_appointment(appointment_id, reason):
