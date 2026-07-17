@@ -59,62 +59,54 @@ async function registerUser() {
     }
 }
 
-// User access validation login routine
+// Handles user login submission
 async function login() {
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
-    const messageElement = document.getElementById("message");
-
-    if (!messageElement) return;
-
-    messageElement.innerText = "";
-    messageElement.className = "mt-3 text-center text-danger";
-
-    if (!email || !password) {
-        messageElement.innerText = "Please enter both email and password.";
-        return;
-    }
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const messageEl = document.getElementById('message');
 
     try {
-        const response = await fetch("/api/login", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
+        const response = await fetch('/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
         });
 
         const data = await response.json();
 
         if (response.ok) {
-            localStorage.setItem("session_id", data.session_id);
-            alert(data.message || "Login Successful!");
-            
-            // REDIRECTION FIX: Directs your successfully validated users 
-            // directly onto the active hub instead of a generic home placeholder
-            window.location.href = "/wellbeing";
+            // Save the session ID to local storage so the logout function can read it later
+            localStorage.setItem('session_id', data.session_id);
+            // Redirect smoothly to your home dashboard dashboard
+            window.location.href = '/home';
         } else {
-            messageElement.innerText = data.message || "Login failed. Please try again.";
+            messageEl.innerText = data.message || "Login failed.";
         }
-    } catch (error) {
-        console.error("Error during login:", error);
-        messageElement.innerText = "An error occurred. Please check your connection.";
+    } catch (err) {
+        messageEl.innerText = "An error occurred. Please try again.";
     }
 }
 
-// Clears user sessions and handles secure logging out
-async function logoutUser() {
-    const sessionId = localStorage.getItem("session_id"); 
+// Handles user logout execution across the site
+async function logout() {
+    const sessionId = localStorage.getItem('session_id');
 
     try {
-        await fetch("/api/logout", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
+        const response = await fetch('/api/logout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ session_id: sessionId })
         });
-    } catch (error) {
-        console.error("Error during server logout routing cleanup:", error);
-    } finally {
-        // Always destroy browser caching states and send users out safely
-        localStorage.removeItem("session_id");
-        window.location.href = "/login";
+
+        if (response.ok) {
+            // Clear local tracking values 
+            localStorage.removeItem('session_id');
+            // Force return to the clean login state
+            window.location.href = '/login';
+        } else {
+            console.error("Logout failed at backend layer.");
+        }
+    } catch (err) {
+        console.error("Network issue occurred executing logout API:", err);
     }
 }

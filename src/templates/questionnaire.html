@@ -25,6 +25,18 @@
         background-color: var(--form-bg) !important;
     }
 
+    /* --- OVERRIDE FOR THE NAVBAR LOGOUT BUTTON TO TARGET MATCHA --- */
+    #logoutButton {
+        background-color: var(--color-matcha) !important;
+        border-color: var(--color-matcha) !important;
+        color: #ffffff !important;
+    }
+    #logoutButton:hover {
+        background-color: var(--color-matcha-hover) !important;
+        border-color: var(--color-matcha-hover) !important;
+    }
+    /* ------------------------------------------------------------- */
+
     .wellbeing-container {
         max-width: 770px;
         margin: 40px auto;
@@ -96,7 +108,6 @@
         gap: 10px; 
     }
 
-    /* Polished Theme Option Buttons */
     .option-btn {
         background: transparent; 
         border: 1px solid rgba(166, 161, 190, 0.5);
@@ -123,14 +134,12 @@
         transition: all 0.2s ease;
     }
     
-    /* Interactive Hover State using your Lilac color */
     .option-btn:hover { 
         background-color: var(--color-lilac) !important; 
         border-color: var(--color-lavender) !important;
         color: #333333;
     }
     
-    /* FIXED: Complete Organic Active Tint overrides old blue state layout */
     .option-btn.active, .option-btn.active:focus, .option-btn.active:active { 
         background-color: #f4f7f4 !important; 
         color: var(--text-primary) !important;
@@ -180,9 +189,10 @@
         font-weight: 500;
         transition: all 0.2s ease;
     }
+    
     .btn-back-home:hover { 
-        background-color: var(--color-oat) !important; 
-        color: var(--text-primary) !important; 
+        background-color: var(--color-lavender) !important; 
+        color: #ffffff !important; 
     }
 
     @media (max-width: 600px) {

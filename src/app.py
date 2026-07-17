@@ -196,3 +196,7 @@ def handle_cancellation(appointment_id):
         flash("There was an error cancelling your appointment. Please try again.", "danger")
 
     return redirect(url_for("appointment_dashboard"))
+
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, debug=True)

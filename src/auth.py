@@ -1,6 +1,6 @@
 from typing import Optional
 from uuid import uuid4
-from typing import Any
+
 from flask import Blueprint, jsonify, redirect, render_template, request, session, url_for
 from supabase import Client
 
