@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 
 from flask import (  # type: ignore[import]
@@ -22,7 +23,9 @@ from appointment_booking import (
     get_counselor_dashboard_appointments,
     get_dashboard_appointments,
     remove_counselor_availability,
+    reschedule_appointment,
     retrieve_slots,
+    update_appointment_status,
 )
 from auth import auth as auth_blueprint
 from database import supabase
@@ -45,6 +48,12 @@ def format_datetime(date_string, format_string):
         return dt.strftime(format_string)
     except Exception:
         return date_string
+
+
+@app.template_filter("safe_json")
+def safe_json_filter(value):
+    """Safely converts Python/Database objects to JSON strings, handling dates/UUIDs."""
+    return json.dumps(value, default=str)
 
 
 @app.route("/")
@@ -129,6 +138,24 @@ def remove_availability(rule_id):
 
     # Redirect safely back to the manage availability page
     return redirect(url_for("manage_availability"))
+
+
+@app.route("/update-status/<int:appointment_id>", methods=["POST"])
+def handle_update_status(appointment_id):
+    # Grab the selected status from the frontend form
+    new_status = request.form.get("status")
+
+    # Trigger the clean backend database function
+    success = update_appointment_status(appointment_id, new_status)
+
+    # Handle the UI messaging based on the result
+    if success:
+        flash(f"Session successfully marked as {new_status}.", "success")
+    else:
+        flash("Failed to update status. Please try again.", "danger")
+
+    # Redirect back to the counselor dashboard safely
+    return redirect(url_for("counselor_dashboard"))
 
 
 # VIEW AVAILABILITY
@@ -223,3 +250,57 @@ def handle_cancellation(appointment_id):
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
+
+
+@app.route("/reschedule/<int:appointment_id>", methods=["GET", "POST"])
+def reschedule_page(appointment_id):
+
+    # ==========================================
+    # POST METHOD: The user clicked "Update Booking"
+    # ==========================================
+    if request.method == "POST":
+        # 1. Grab the submitted form data
+        # Note: Your HTML radio buttons use name="counselor", not "therapist_id"
+        therapist_id = int(request.form.get("counselor"))
+        new_date = request.form.get("date")
+        new_slot = request.form.get("slot")
+
+        # 2. Trigger the database update function we built in the very beginning
+        # (Make sure reschedule_appointment is imported at the top of app.py!)
+        success = reschedule_appointment(appointment_id, therapist_id, new_date, new_slot)
+
+        # 3. Flash a message and redirect back to the dashboard
+        if success:
+            flash("Your appointment has been successfully rescheduled!", "success")
+        else:
+            flash("Failed to reschedule. That time slot may no longer be available.", "danger")
+
+        return redirect(url_for("appointment_dashboard"))
+
+    # ==========================================
+    # GET METHOD: The user just loaded the page
+    # ==========================================
+
+    # 1. Fetch the existing appointment
+    response = supabase.table("appointment").select("*").eq("id", appointment_id).execute()
+    appointment = response.data[0]
+
+    # 2. Fetch ALL counselors
+    counselors = get_all_counselors()
+
+    # 3. Find the specific therapist
+    therapist = None
+    for c in counselors:
+        c_id = c["id"] if isinstance(c, dict) else c.id
+        if str(c_id) == str(appointment["therapist_id"]):
+            therapist = c
+            break
+
+    # 4. Render the template
+    return render_template(
+        "booking.html",
+        counselors=counselors,
+        is_reschedule=True,
+        appointment_id=appointment_id,
+        therapist=therapist,
+    )
