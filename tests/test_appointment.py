@@ -373,9 +373,11 @@ def test_create_appointment_uses_provided_user_id(monkeypatch):
         lambda *_args, **_kwargs: False,
     )
 
+    future_date = (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d")
+
     apt = appointment_booking_module.create_appointment(
         therapist_id=1,
-        date_str="2026-07-25",
+        date_str=future_date,  # <--- Always in the future!
         slot="09.00 am",
         appointment_type="In-Person",
         user_id=42,

@@ -79,8 +79,13 @@
                         </small>
                     </div>
                     
-                    <div class="d-flex gap-2">
+                    <div class="d-flex gap-2 flex-wrap">
                         <button class="btn btn-sm rounded-pill fw-bold" style="background-color: var(--color-mint); color: #333;">View Notes</button>
+                        
+                        <button type="button" class="btn btn-sm rounded-pill fw-bold" style="border: 2px solid var(--color-lavender); color: var(--color-lavender);" onclick="prepareStatusModal('{{ apt.id }}')">
+                            Update Status
+                        </button>
+                        
                         <button type="button" class="btn btn-sm btn-outline-danger rounded-pill fw-bold" onclick="prepareCancelModal('{{ apt.id }}')">Cancel</button>
                     </div>
                 </div>
@@ -159,6 +164,51 @@
         document.getElementById('cancelReason').value = '';
         
         const modalElement = document.getElementById('cancelModal');
+        const modalInstance = new bootstrap.Modal(modalElement);
+        modalInstance.show();
+    }
+</script>
+
+<div class="modal fade" id="statusModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow" style="border-top: 4px solid var(--color-matcha);">
+            <form id="statusForm" method="POST" action="">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-bold" style="color: var(--color-matcha);">Update Session Status</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="text-muted mb-3">Mark the outcome of this session. Completed sessions will be moved to your history.</p>
+                    
+                    <div class="mb-3">
+                        <label for="newStatus" class="form-label fw-bold" style="color: var(--color-matcha);">Session Outcome</label>
+                        <select class="form-select rounded-3" id="newStatus" name="status" required style="border-color: var(--color-mint);">
+                            <option value="" disabled selected>Select a status...</option>
+                            <option value="Completed">✅ Completed</option>
+                            <option value="Absent">❌ Absent / No Show</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn rounded-pill px-4 fw-bold btn-light" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn rounded-pill px-4 fw-bold text-white" style="background-color: var(--color-matcha);">Save Status</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function prepareStatusModal(appointmentId) {
+        // 1. Point the form action to the correct route with the specific appointment ID
+        const form = document.getElementById('statusForm');
+        form.action = '/update-status/' + appointmentId; 
+        
+        // 2. Reset the dropdown to the default placeholder
+        document.getElementById('newStatus').value = '';
+        
+        // 3. Show the modal
+        const modalElement = document.getElementById('statusModal');
         const modalInstance = new bootstrap.Modal(modalElement);
         modalInstance.show();
     }
