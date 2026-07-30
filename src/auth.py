@@ -11,7 +11,8 @@ try:
     supabase: Optional[Client] = database.supabase
     HAS_SUPABASE = True
 except (ImportError, ValueError, RuntimeError):
-    pass
+    supabase = None
+    HAS_SUPABASE = False
 
 auth = Blueprint("auth", __name__)
 
@@ -23,10 +24,11 @@ fallback_patients = {
         "name": "John Doe",
         "user_role": "patient",
         "is_verified": True,
+        "profile_picture": "/static/uploads/default_avatar.png",
     }
 }
 
-# 2. FIXED: Explicit type annotation added to resolve the var-annotated mypy error
+# Explicit type annotation added to resolve the var-annotated mypy error
 fallback_sessions: dict[str, str] = {}
 
 
@@ -77,7 +79,8 @@ def login():
             )
             if response.data:
                 user = response.data[0]
-        except Exception:
+        except Exception as e:
+            print(f"Error fetching user from database: {e}")
             user = None
 
     # 2. Fall back to local verification if Supabase is offline or row isn't found
@@ -91,32 +94,61 @@ def login():
         local_user = fallback_patients.get(email) or fallback_counselors.get(email)
         if local_user is None:
             return jsonify({"message": "Invalid email or password"}), 401
+
         stored_password = local_user["password"]
         if not (check_password_hash(stored_password, password) or stored_password == password):
             return jsonify({"message": "Invalid email or password"}), 401
         if local_user.get("is_verified") is False:
             return jsonify({"message": "Email not verified"}), 403
+
         user = {
+            "id": local_user.get("id"),
             "email": email,
             "password": stored_password,
             "name": local_user.get("name", ""),
             "is_verified": local_user.get("is_verified"),
             "user_role": local_user.get("user_role", "patient"),
+            "profile_picture": local_user.get("profile_picture", ""),
         }
     else:
         stored_password = user.get("password")
         if not (check_password_hash(stored_password, password) or stored_password == password):
             return jsonify({"message": "Invalid email or password"}), 401
-        if not user.get("is_verified"):
+        if not user.get("get", user.get("is_verified")):
             return jsonify({"message": "Email not verified"}), 403
         user["user_role"] = user.get("user_role") or "patient"
 
+    # --- Fetch Profile Metadata (profile_picture, full_name) for Session Sync ---
+    profile_picture = ""
+    full_name = user.get("name", "")
+
+    if supabase is not None and user.get("id"):
+        try:
+            profile_res = (
+                supabase.table("user_profile")
+                .select("full_name, profile_picture")
+                .eq("user_id", user["id"])
+                .execute()
+            )
+            if profile_res.data:
+                p_data = profile_res.data[0]
+                profile_picture = p_data.get("profile_picture", "")
+                if p_data.get("full_name"):
+                    full_name = p_data.get("full_name")
+        except Exception as e:
+            print(f"Error fetching profile metadata on login: {e}")
+    else:
+        profile_picture = user.get("profile_picture", "")
+
+    # Establish session state
     session_id = str(uuid4())
     fallback_sessions[session_id] = email
 
-    # DYNAMIC FIX: Stores the individual user's structural primary key inside the session container.
     session["user_id"] = user.get("id")
     session["session_id"] = session_id
+    session["email"] = email
+    session["full_name"] = full_name
+    session["profile_picture"] = profile_picture
 
     role = (user.get("user_role") or "patient").strip().lower()
 
@@ -139,18 +171,21 @@ def login():
 
 @auth.route("/api/logout", methods=["POST"])
 def logout():
-    logout_data = request.get_json()
-    if not logout_data:
-        return jsonify({"message": "Session ID required"}), 400
-
+    logout_data = request.get_json() or {}
     session_id = logout_data.get("session_id")
 
+    if not session_id:
+        return jsonify({"message": "Session ID required"}), 400
+
+    # Clear user session keys completely
     session.pop("user_id", None)
     session.pop("session_id", None)
+    session.pop("email", None)
+    session.pop("full_name", None)
+    session.pop("profile_picture", None)
 
-    if not HAS_SUPABASE:
-        if session_id in fallback_sessions:
-            del fallback_sessions[session_id]
+    if not HAS_SUPABASE and session_id in fallback_sessions:
+        del fallback_sessions[session_id]
 
     return jsonify(
         {
