@@ -37,13 +37,12 @@ def admin_resources_page():
     types = []
 
     try:
-        category_result = supabase.rpc("get_enum_values", {"enum_name": "Category"}).execute()
+        if supabase is not None:
+            category_result = supabase.rpc("get_enum_values", {"enum_name": "Category"}).execute()
+            categories = [item["enumlabel"] for item in category_result.data]
 
-        categories = [item["enumlabel"] for item in category_result.data]
-
-        type_result = supabase.rpc("get_enum_values", {"enum_name": "resources_type"}).execute()
-
-        types = [item["enumlabel"] for item in type_result.data]
+            type_result = supabase.rpc("get_enum_values", {"enum_name": "resources_type"}).execute()
+            types = [item["enumlabel"] for item in type_result.data]
 
     except Exception as e:
         print(e)
@@ -76,7 +75,13 @@ def create_resource():
 
 @admin.route("/admin/resources/<resource_id>/update", methods=["POST"])
 def update_resource(resource_id: str):
-    resource_id = int(resource_id)
+    # Convert resource_id string from URL path to int safely
+    try:
+        resource_id_int = int(resource_id)
+    except (ValueError, TypeError):
+        flash("Invalid resource ID provided.", "danger")
+        return redirect(url_for("admin.admin_resources_page"))
+
     updates = {
         "title": request.form.get("title", "").strip(),
         "description": request.form.get("description", "").strip(),
@@ -88,7 +93,7 @@ def update_resource(resource_id: str):
     }
 
     try:
-        _, message = resource_service.update_resource(resource_id, updates)
+        _, message = resource_service.update_resource(resource_id_int, updates)
         flash(message, "success")
     except Exception as exc:  # pragma: no cover - user-facing validation
         flash(str(exc), "danger")
@@ -98,18 +103,16 @@ def update_resource(resource_id: str):
 
 @admin.route("/admin/resources/<resource_id>/delete", methods=["POST"])
 def delete_resource(resource_id: str):
-    resource_id = int(resource_id)
-    success, message = resource_service.delete_resource(resource_id, confirmed=True)
+    # Convert resource_id string from URL path to int safely
+    try:
+        resource_id_int = int(resource_id)
+    except (ValueError, TypeError):
+        flash("Invalid resource ID provided.", "danger")
+        return redirect(url_for("admin.admin_resources_page"))
+
+    success, message = resource_service.delete_resource(resource_id_int, confirmed=True)
     flash(message, "success" if success else "danger")
     return redirect(url_for("admin.admin_resources_page"))
-
-
-def get_enum_values(enum_name):
-    try:
-        pass
-
-    except Exception:
-        return []
 
 
 @admin.route("/api/admin/create-counselor", methods=["POST"])

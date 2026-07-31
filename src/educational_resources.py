@@ -4,12 +4,12 @@ import json
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 try:
     from database import supabase
 except Exception:  # Fallback if database setup isn't available
-    supabase = None
+    supabase = None  # type: ignore[assignment]
 
 ALLOWED_RESOURCE_TYPES = frozenset({"article", "video", "self_help_guide"})
 DEFAULT_STORAGE_PATH = Path(__file__).resolve().parent / "data" / "educational_resources.json"
@@ -95,15 +95,16 @@ class EducationalResourceStore:
         self._load()
 
     def _load(self) -> None:
-        if self._use_supabase:
+        if self._use_supabase and supabase is not None:
             try:
                 response = supabase.table("resources").select("*").execute()
                 rows = response.data or []
                 self._resources = {}
                 for row in rows:
-                    resource = EducationalResource.from_dict(row)
-                    if resource.id is not None:
-                        self._resources[resource.id] = resource
+                    if isinstance(row, dict):
+                        resource = EducationalResource.from_dict(row)
+                        if resource.id is not None:
+                            self._resources[resource.id] = resource
             except Exception as e:
                 print("SUPABASE LOAD ERROR:", e)
                 self._resources = {}
@@ -123,7 +124,7 @@ class EducationalResourceStore:
 
         if isinstance(payload, dict):
             self._resources = {
-                int(resource_id): EducationalResource.from_dict(resource_data)
+                int(resource_id): EducationalResource.from_dict(cast(Dict[str, Any], resource_data))
                 for resource_id, resource_data in payload.items()
             }
         else:
@@ -131,7 +132,7 @@ class EducationalResourceStore:
             self._save()
 
     def _save(self) -> None:
-        if self._use_supabase:
+        if self._use_supabase and supabase is not None:
             try:
                 for resource in list(self._resources.values()):
                     payload = resource.to_dict()
@@ -139,8 +140,10 @@ class EducationalResourceStore:
                     if resource.id is None:
                         payload.pop("id", None)
                         response = supabase.table("resources").insert(payload).execute()
-                        if response.data and len(response.data) > 0:
-                            resource.id = int(response.data[0]["id"])
+                        if response.data and isinstance(response.data, list) and len(response.data) > 0:
+                            first_item = response.data[0]
+                            if isinstance(first_item, dict) and "id" in first_item:
+                                resource.id = int(first_item["id"])
                     else:
                         resource_id = payload.pop("id")
                         supabase.table("resources").update(payload).eq("id", resource_id).execute()
@@ -168,18 +171,20 @@ class EducationalResourceStore:
         return self._resources.get(resource_id)
 
     def create_resource(self, resource: EducationalResource) -> EducationalResource:
-        if self._use_supabase:
+        if self._use_supabase and supabase is not None:
             try:
                 payload = resource.to_dict()
                 payload.pop("id", None)
                 response = supabase.table("resources").insert(payload).execute()
 
-                if response.data and len(response.data) > 0:
-                    inserted_id = response.data[0].get("id")
-                    if inserted_id is not None:
-                        resource.id = int(inserted_id)
-                        self._resources[resource.id] = resource
-                        return resource
+                if response.data and isinstance(response.data, list) and len(response.data) > 0:
+                    first_item = response.data[0]
+                    if isinstance(first_item, dict) and "id" in first_item:
+                        inserted_id = first_item.get("id")
+                        if inserted_id is not None:
+                            resource.id = int(inserted_id)
+                            self._resources[resource.id] = resource
+                            return resource
             except Exception as e:
                 print("SUPABASE INSERT ERROR:", e)
 
@@ -197,7 +202,7 @@ class EducationalResourceStore:
     def update_resource(self, resource: EducationalResource) -> EducationalResource:
         if resource.id is not None:
             self._resources[resource.id] = resource
-            if self._use_supabase:
+            if self._use_supabase and supabase is not None:
                 try:
                     payload = resource.to_dict()
                     resource_id = payload.pop("id")
@@ -209,7 +214,7 @@ class EducationalResourceStore:
         return resource
 
     def delete_resource(self, resource_id: int) -> None:
-        if self._use_supabase:
+        if self._use_supabase and supabase is not None:
             try:
                 supabase.table("resources").delete().eq("id", resource_id).execute()
             except Exception as e:
