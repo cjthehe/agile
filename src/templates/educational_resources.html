@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    :root {
+        --edu-pink-light: #FFDBDF;
+        --edu-pink-strong: #F791A9;
+        --edu-pink-dark: #B84C68;
+        --edu-text: #4F2C3A;
+    }
+
+    .edu-shell {
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        color: var(--edu-text);
+    }
+
+    .edu-hero {
+        background: linear-gradient(135deg, var(--edu-pink-light) 0%, #fff 100%);
+        border: 1px solid #f7d9df;
+        border-radius: 24px;
+        padding: 28px;
+        box-shadow: 0 10px 30px rgba(247, 145, 169, 0.08);
+    }
+
+    .edu-icon {
+        width: 58px;
+        height: 58px;
+        border-radius: 50%;
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        background: #fff5f7;
+        color: var(--edu-pink-dark);
+        font-size: 1.4rem;
+    }
+
+    .edu-card {
+        border: 1px solid #f7d9df;
+        border-radius: 20px;
+        box-shadow: 0 8px 24px rgba(184, 76, 104, 0.06);
+        overflow: hidden;
+    }
+
+    .edu-btn {
+        background: var(--edu-pink-strong);
+        color: white;
+        border: none;
+        border-radius: 999px;
+        padding: 10px 18px;
+        font-weight: 600;
+    }
+
+    .edu-btn:hover {
+        background: #ec7492;
+        color: white;
+    }
+</style>
+
+<div class="container py-4 edu-shell">
+    <div class="edu-hero mb-4">
+        <div class="row g-4 align-items-center">
+            <div class="col-lg-8">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div class="edu-icon">📚</div>
+                    <div>
+                        <h1 class="h3 fw-bold mb-1" style="color: var(--edu-pink-dark);">Educational Resources</h1>
+                        <p class="text-muted mb-0">Browse trusted articles, videos, and self-help guides designed to support your wellbeing.</p>
+                    </div>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <span class="badge rounded-pill" style="background: #fff0f3; color: var(--edu-pink-dark);">Articles</span>
+                    <span class="badge rounded-pill" style="background: #fff0f3; color: var(--edu-pink-dark);">Videos</span>
+                    <span class="badge rounded-pill" style="background: #fff0f3; color: var(--edu-pink-dark);">Self-help guides</span>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="card border-0 rounded-4 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="fw-bold mb-2" style="color: var(--edu-pink-dark);">Find something useful</h5>
+                        <p class="text-muted small mb-3">Search by topic, keyword, or tag to quickly reach the information you need.</p>
+                        <form method="get" class="d-flex gap-2">
+                            <input type="text" class="form-control" name="q" placeholder="Search resources" value="{{ query or '' }}">
+                            <button class="edu-btn" type="submit">Go</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="h5 fw-bold mb-0" style="color: var(--edu-pink-dark);">Available resources</h2>
+        <a href="{{ url_for('home_page') }}" class="btn btn-outline-secondary btn-sm rounded-pill">Back to Home</a>
+    </div>
+
+    {% if message %}
+        <div class="alert rounded-3 mb-4" style="background: #fff5f7; color: var(--edu-pink-dark); border: 1px solid #f7d9df;">{{ message }}</div>
+    {% endif %}
+
+    {% if resources %}
+        <div class="row row-cols-1 row-cols-md-2 g-4">
+            {% for resource in resources %}
+                <div class="col">
+                    <div class="card h-100 edu-card">
+                        {% if resource.thumbnail_url %}
+                            <img src="{{ resource.thumbnail_url }}" class="card-img-top" alt="{{ resource.title }}" style="height: 200px; object-fit: cover;">
+                        {% endif %}
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <span class="badge rounded-pill" style="background: #fff0f3; color: var(--edu-pink-dark);">{{ resource.resource_type.replace('_', ' ') | title }}</span>
+                                <span class="text-muted small">{{ resource.category }}</span>
+                            </div>
+                            <h5 class="card-title fw-bold">{{ resource.title }}</h5>
+                            <p class="card-text text-muted">{{ resource.description }}</p>
+
+                            {% if resource.tags %}
+                                <div class="mb-3">
+                                    {% for tag in resource.tags %}
+                                        <span class="badge bg-light text-dark me-1">{{ tag }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="card-footer bg-white border-0 pt-0">
+                            {% if resource.content_url %}
+                                <a href="{{ resource.content_url }}" class="edu-btn btn-sm" target="_blank" rel="noopener noreferrer">Open Resource</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-light border rounded-4" style="border-color: #f7d9df;">
+            No educational resources are available right now.
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

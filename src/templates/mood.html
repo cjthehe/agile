@@ -2,7 +2,7 @@
 
 {% block content %}
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
     :root {
         --primary-light: #EBF3FF;
@@ -43,6 +43,71 @@
         color: var(--text-muted);
         margin: 0;
         font-size: 1.05rem;
+    }
+
+    .privacy-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        padding: 24px 32px;
+        margin-bottom: 32px;
+        box-shadow: var(--shadow-sm);
+    }
+    .privacy-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+    }
+    .privacy-title {
+        font-weight: 700;
+        font-size: 1.1rem;
+        margin-bottom: 4px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .privacy-desc {
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        margin: 0;
+    }
+    .switch {
+        position: relative;
+        display: inline-block;
+        width: 50px;
+        height: 26px;
+        flex-shrink: 0;
+    }
+    .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background-color: #CBD5E1;
+        transition: .3s;
+        border-radius: 34px;
+    }
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 20px;
+        width: 20px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: .3s;
+        border-radius: 50%;
+    }
+    input:checked + .slider {
+        background-color: var(--color-matcha, #10B981);
+    }
+    input:checked + .slider:before {
+        transform: translateX(24px);
     }
 
     .wellbeing-grid {
@@ -106,7 +171,7 @@
         color: var(--text-muted);
     }
     .mood-btn:hover {
-        border-color: var(--color-matcha);
+        border-color: var(--color-matcha, #10B981);
         background: var(--primary-light);
         transform: translateY(-2px);
     }
@@ -114,12 +179,12 @@
         transform: scale(1.2);
     }
     .mood-btn.active {
-        border-color: var(--color-matcha);
+        border-color: var(--color-matcha, #10B981);
         background: var(--primary-light);
-        box-shadow: 0 0 0 2px var(--color-matcha);
+        box-shadow: 0 0 0 2px var(--color-matcha, #10B981);
     }
     .mood-btn.active .label {
-        color: var(--color-matcha);
+        color: var(--color-matcha, #10B981);
     }
 
     .note-box {
@@ -138,7 +203,7 @@
     .note-box:focus {
         outline: none;
         background: #FFFFFF;
-        border-color: var(--color-matcha);
+        border-color: var(--color-matcha, #10B981);
         box-shadow: 0 0 0 4px rgba(164, 194, 165, 0.2);
     }
 
@@ -156,9 +221,9 @@
         transition: all 0.15s ease;
     }
     .btn-primary {
-        background-color: var(--color-matcha) !important;
+        background-color: var(--color-matcha, #10B981) !important;
         color: #FFFFFF !important;
-        border: 1px solid var(--color-matcha) !important;
+        border: 1px solid var(--color-matcha, #10B981) !important;
         box-shadow: 0 4px 12px rgba(164, 194, 165, 0.2);
     }
     .btn-primary:hover {
@@ -169,15 +234,32 @@
     
     .btn-secondary {
         background: transparent !important;
-        border: 1px solid var(--color-lavender) !important;
+        border: 1px solid var(--color-lavender, #CBD5E1) !important;
         color: var(--text-main) !important;
         padding: 10px 24px;
         font-size: 0.95rem;
         border-radius: 8px !important;
     }
     .btn-secondary:hover {
-        background-color: var(--color-lilac) !important;
+        background-color: var(--color-lilac, #F1F5F9) !important;
         color: #444 !important;
+    }
+
+    .btn-edit-sm {
+        background: #F1F5F9;
+        border: 1px solid var(--border-color);
+        color: var(--text-main);
+        padding: 4px 10px;
+        font-size: 0.775rem;
+        font-weight: 600;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .btn-edit-sm:hover {
+        background: var(--color-matcha, #10B981);
+        color: #FFFFFF;
+        border-color: var(--color-matcha, #10B981);
     }
 
     .history-panel {
@@ -234,12 +316,17 @@
         margin-bottom: 12px;
     }
     .history-mood-badge {
-        background: var(--color-lilac);
+        background: var(--color-lilac, #F1F5F9);
         color: #444444;
         padding: 6px 14px;
         border-radius: 20px;
         font-weight: 700;
         font-size: 0.85rem;
+    }
+    .history-meta-right {
+        display: flex;
+        align-items: center;
+        gap: 10px;
     }
     .history-time {
         color: var(--text-muted);
@@ -251,6 +338,7 @@
         font-size: 0.95rem;
         color: #475569;
         line-height: 1.5;
+        white-space: pre-wrap;
     }
 
     .empty-history {
@@ -292,6 +380,39 @@
         background: transparent; border: none; font-size: 1.25rem; cursor: pointer; line-height: 1;
     }
 
+    /* Modal Styling for Editing */
+    .modal-overlay {
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(15, 23, 42, 0.5);
+        backdrop-filter: blur(4px);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+    }
+    .modal-content {
+        background: #FFFFFF;
+        border-radius: var(--radius-lg);
+        padding: 32px;
+        width: 90%;
+        max-width: 580px;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    .modal-header h3 { margin: 0; font-size: 1.3rem; font-weight: 700; }
+    .modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        margin-top: 24px;
+    }
+
     @keyframes fadeIn {
         from { opacity: 0; transform: translateY(-10px); }
         to { opacity: 1; transform: translateY(0); }
@@ -302,6 +423,7 @@
         .mood-selection-row { grid-template-columns: repeat(3, 1fr); }
         .wellbeing-page-header { flex-direction: column; align-items: flex-start; gap: 16px; }
         .wellbeing-page-header .btn-secondary { width: 100%; }
+        .privacy-header { flex-direction: column; align-items: flex-start; gap: 12px; }
     }
 </style>
 
@@ -314,16 +436,56 @@
         <a class="wellbeing-btn btn-secondary" href="/wellbeing">Back to Wellbeing Tracking</a>
     </header>
 
+    <!-- PRIVACY & SHARING PREFERENCE SECTION -->
+    <section class="privacy-card">
+        <div class="privacy-header">
+            <div>
+                <div class="privacy-title">
+                    🔒 Counselor Record Sharing
+                </div>
+                <p class="privacy-desc">Allow your assigned counselor to view your self-assessments and mood history logs to personalize your guidance.</p>
+            </div>
+            <label class="switch">
+                <input type="checkbox" id="privacyToggle">
+                <span class="slider"></span>
+            </label>
+        </div>
+    </section>
+
+    <!-- Dynamic Feedback Notifications -->
+    <div class="wellbeing-success" id="privacyToast" style="display: none;">
+        <span id="privacyToastMsg">✨ Privacy preference saved successfully!</span>
+        <button type="button" class="success-close-btn" onclick="dismissBanner('privacyToast')">&times;</button>
+    </div>
+
+    {% with messages = get_flashed_messages(category_filter=["error"]) %}
+        {% if messages %}
+            {% for message in messages %}
+            <div class="wellbeing-error">
+                <span>⚠️ {{ message }}</span>
+                <button type="button" class="error-close-btn" onclick="this.parentElement.style.display='none'">&times;</button>
+            </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
     {% if success %}
     <div class="wellbeing-success" id="successBanner">
         <span>✨ Success! Your mood entry and personal notes have been logged safely.</span>
-        <button type="button" class="success-close-btn" onclick="dismissBanner()">&times;</button>
+        <button type="button" class="success-close-btn" onclick="dismissBanner('successBanner')">&times;</button>
+    </div>
+    {% endif %}
+
+    {% if request.args.get('updated') == 'true' %}
+    <div class="wellbeing-success" id="updateBanner">
+        <span>✏️ Confirmation: Your mood entry and notes have been updated successfully!</span>
+        <button type="button" class="success-close-btn" onclick="dismissBanner('updateBanner')">&times;</button>
     </div>
     {% endif %}
 
     <div class="wellbeing-error" id="errorBanner" style="display: none;">
         <span>⚠️ Please select a mood emoji before saving your entry!</span>
-        <button type="button" class="error-close-btn" onclick="dismissErrorBanner()">&times;</button>
+        <button type="button" class="error-close-btn" onclick="dismissBanner('errorBanner')">&times;</button>
     </div>
 
     <div class="wellbeing-grid">
@@ -348,7 +510,7 @@
                             <span class="emoji">😢</span> <span class="label">Very Sad</span>
                         </button>
                     </div>
-                    <input type="hidden" name="mood" id="selectedMood">
+                    <input type="hidden" name="mood" id="selectedMood" required>
                 </div>
 
                 <div class="form-group">
@@ -372,7 +534,17 @@
                     <div class="history-item">
                         <div class="history-item-top">
                             <span class="history-mood-badge">{{ record.mood }}</span>
-                            <small class="history-time">{{ record.datetime }}</small>
+                            <div class="history-meta-right">
+                                <span class="history-time">{{ record.datetime }}</span>
+                                <button type="button" 
+                                        class="btn-edit-sm" 
+                                        data-id="{{ record.id }}" 
+                                        data-mood="{{ record.mood }}" 
+                                        data-note="{{ record.note or '' }}"
+                                        onclick="openEditModal(this)">
+                                    Edit
+                                </button>
+                            </div>
                         </div>
                         {% if record.note %}
                         <p class="history-note">{{ record.note }}</p>
@@ -381,7 +553,7 @@
                     {% endfor %}
                 {% else %}
                     <div class="empty-history">
-                        <p>No logged entries yet. Start tracking above!</p>
+                        <p>No mood logs yet. Take a moment to log your first mood entry today!</p>
                     </div>
                 {% endif %}
             </div>
@@ -389,28 +561,154 @@
     </div>
 </div>
 
+<!-- EDIT MODAL -->
+<div class="modal-overlay" id="editModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Edit Mood Log</h3>
+            <button type="button" class="error-close-btn" onclick="closeEditModal()">&times;</button>
+        </div>
+        <form id="editForm" method="POST">
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label class="form-label">Update Mood</label>
+                <div class="mood-selection-row" id="editMoodRow">
+                    <button type="button" class="mood-btn edit-mood-btn" data-value="😊 Happy">
+                        <span class="emoji">😊</span> <span class="label">Happy</span>
+                    </button>
+                    <button type="button" class="mood-btn edit-mood-btn" data-value="🙂 Calm">
+                        <span class="emoji">🙂</span> <span class="label">Calm</span>
+                    </button>
+                    <button type="button" class="mood-btn edit-mood-btn" data-value="😐 Neutral">
+                        <span class="emoji">😐</span> <span class="label">Neutral</span>
+                    </button>
+                    <button type="button" class="mood-btn edit-mood-btn" data-value="😔 Sad">
+                        <span class="emoji">😔</span> <span class="label">Sad</span>
+                    </button>
+                    <button type="button" class="mood-btn edit-mood-btn" data-value="😢 Very Sad">
+                        <span class="emoji">😢</span> <span class="label">Very Sad</span>
+                    </button>
+                </div>
+                <input type="hidden" name="mood" id="editSelectedMood" required>
+            </div>
+
+            <div class="form-group">
+                <label for="editNote" class="form-label">Update Personal Notes</label>
+                <textarea id="editNote" name="note" class="note-box" placeholder="Update reflections..."></textarea>
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" class="wellbeing-btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+                <button type="submit" class="wellbeing-btn btn-primary">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
-    document.querySelectorAll('.mood-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
-            document.getElementById('selectedMood').value = this.dataset.value;
-            if (document.getElementById('errorBanner')) document.getElementById('errorBanner').style.display = 'none';
+    // Main Form Mood Buttons logic
+    const moodBtns = document.querySelectorAll('#moodForm .mood-btn');
+    const selectedMoodInput = document.getElementById('selectedMood');
+    const moodForm = document.getElementById('moodForm');
+    const errorBanner = document.getElementById('errorBanner');
+
+    moodBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            moodBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            selectedMoodInput.value = btn.getAttribute('data-value');
+            errorBanner.style.display = 'none';
         });
     });
 
-    document.getElementById('moodForm').addEventListener('submit', function(event) {
-        if (!document.getElementById('selectedMood').value) {
-            event.preventDefault();
-            if (document.getElementById('successBanner')) document.getElementById('successBanner').style.display = 'none';
-            if (document.getElementById('errorBanner')) {
-                document.getElementById('errorBanner').style.display = 'flex';
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            }
+    moodForm.addEventListener('submit', (e) => {
+        if (!selectedMoodInput.value) {
+            e.preventDefault();
+            errorBanner.style.display = 'flex';
         }
     });
 
-    function dismissBanner() { document.getElementById('successBanner').style.display = 'none'; }
-    function dismissErrorBanner() { document.getElementById('errorBanner').style.display = 'none'; }
+    // Edit Modal Mood Buttons logic
+    const editMoodBtns = document.querySelectorAll('.edit-mood-btn');
+    const editSelectedMoodInput = document.getElementById('editSelectedMood');
+
+    editMoodBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            editMoodBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            editSelectedMoodInput.value = btn.getAttribute('data-value');
+        });
+    });
+
+    // Privacy Preference Toggle Logic
+    const privacyToggle = document.getElementById('privacyToggle');
+    const privacyToast = document.getElementById('privacyToast');
+    const privacyToastMsg = document.getElementById('privacyToastMsg');
+
+    // Fetch initial setting
+    fetch('/privacy-settings')
+        .then(res => res.json())
+        .then(data => {
+            if (data.share_records !== undefined) {
+                privacyToggle.checked = data.share_records;
+            }
+        })
+        .catch(err => console.error("Error loading privacy setting:", err));
+
+    // Handle toggle switch state change
+    privacyToggle.addEventListener('change', () => {
+        const newValue = privacyToggle.checked;
+
+        fetch('/privacy-settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ share_records: newValue })
+        })
+        .then(res => res.json())
+        .then(data => {
+            privacyToastMsg.textContent = newValue 
+                ? "✨ Counselor record sharing enabled." 
+                : "🔒 Counselor record sharing disabled.";
+            privacyToast.style.display = 'flex';
+        })
+        .catch(err => {
+            console.error("Error updating privacy setting:", err);
+            privacyToggle.checked = !newValue;
+        });
+    });
+
+    // Dismiss banners
+    function dismissBanner(id) {
+        document.getElementById(id).style.display = 'none';
+    }
+
+    // Modal Control Functions
+    function openEditModal(buttonElement) {
+        const id = buttonElement.getAttribute('data-id');
+        const mood = buttonElement.getAttribute('data-mood');
+        const note = buttonElement.getAttribute('data-note');
+
+        const modal = document.getElementById('editModal');
+        const editForm = document.getElementById('editForm');
+        const editNote = document.getElementById('editNote');
+
+        editForm.action = `/mood/edit/${id}`;
+        editNote.value = note;
+        editSelectedMoodInput.value = mood;
+
+        // Highlight existing selected mood in the modal button grid
+        editMoodBtns.forEach(btn => {
+            if (btn.getAttribute('data-value') === mood) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+
+        modal.style.display = 'flex';
+    }
+
+    function closeEditModal() {
+        document.getElementById('editModal').style.display = 'none';
+    }
 </script>
 {% endblock %}

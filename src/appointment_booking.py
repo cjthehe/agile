@@ -74,15 +74,16 @@ def get_all_appointments(user_id):
 def get_counselor_dashboard_appointments(therapist_id):
     """
     Fetches and sorts appointments for the COUNSELOR dashboard.
-    Joins the 'user' table to get the patient's username.
+    Joins the 'user' table to get the patient's username AND id.
     """
-    # Fetch from Supabase using the EXPLICIT JOIN for the patient (user)
+    # UPDATE: Added 'user_id' and 'id' inside user() to fetch the patient's ID
     response = supabase.table("appointment").select("""
             id,
             date_time,
             appointment_type,
             status,
-            user(username)
+            user_id,
+            user(id, username)
         """).eq("therapist_id", therapist_id).order("date_time", desc=True).execute()
 
     all_appointments = response.data
@@ -125,6 +126,133 @@ def get_counselor_dashboard_appointments(therapist_id):
         "completed_appointments": completed_list_30_days,
         "has_older": has_older,
     }
+
+
+def update_appointment_status(appointment_id, new_status):
+    """
+    Updates the status of an existing appointment (e.g., 'Completed', 'Absent').
+    """
+    try:
+        response = (
+            supabase.table("appointment")
+            .update({"status": new_status})
+            .eq("id", appointment_id)
+            .execute()
+        )
+
+        # Return True if the update successfully modified a row
+        return bool(response.data)
+    except Exception as e:
+        print(f"Error updating appointment status in Supabase: {e}")
+        return False
+
+
+def auto_complete_past_appointments():
+    """
+    Sweeps the database for appointments that are still 'Booked'
+    but started more than 2 hours ago, and marks them 'Completed'.
+    """
+    # Calculate the exact cutoff time (Right now - 2 hours)
+    cutoff_time = (datetime.now() - timedelta(hours=2)).strftime("%Y-%m-%d %H:%M:%S")
+
+    try:
+        supabase.table("appointment").update({"status": "Completed"}).eq("status", "Booked").lte(
+            "date_time", cutoff_time
+        ).execute()
+    except Exception as e:
+        print(f"Error running auto-completion sweep: {e}")
+
+
+# COUNSELOR AVAILABILITY
+def build_smart_schedule(counselor_rules):
+    smart_schedule = {}
+    today = datetime.now().date()
+
+    # Check the next 90 days
+    for i in range(90):
+        check_date = today + timedelta(days=i)
+        day_name = check_date.strftime("%A")  # e.g., "Monday"
+        date_str = check_date.strftime("%Y-%m-%d")  # e.g., "2026-10-05"
+
+        # Look for a valid rule for this date
+        for rule in counselor_rules:
+            rule_start = datetime.strptime(rule["start_date"], "%Y-%m-%d").date()
+            rule_end = datetime.strptime(rule["end_date"], "%Y-%m-%d").date()
+
+            # If the rule applies to this day AND the date falls within the rule's active range
+            if rule["day"] == day_name and rule_start <= check_date <= rule_end:
+                if date_str not in smart_schedule:
+                    smart_schedule[date_str] = []
+                smart_schedule[date_str].append(
+                    f"{rule['start_time'][:5]} - {rule['end_time'][:5]}"
+                )
+
+    return smart_schedule
+
+
+def get_counselor_availability(therapist_id):
+    """Fetches the current weekly schedule for a specific counselor."""
+    try:
+        response = (
+            supabase.table("availability").select("*").eq("therapist_id", therapist_id).execute()
+        )
+        return response.data
+    except Exception as e:
+        print(f"Error fetching availability: {e}")
+        return []
+
+
+def add_counselor_availability(therapist_id, day, start_time, end_time, start_date, end_date):
+    """Inserts a new day/time rule with effective date ranges and validation checks."""
+    try:
+        # --- BACKEND VALIDATION ---
+        # 1. Parse dates and check logic
+        start_d = datetime.strptime(start_date, "%Y-%m-%d").date()
+        end_d = datetime.strptime(end_date, "%Y-%m-%d").date()
+
+        if start_d > end_d:
+            print("Validation Failed: Start date is after End date")
+            return False
+
+        # 2. Parse times and check logic
+        start_t = datetime.strptime(start_time, "%H:%M").time()
+        end_t = datetime.strptime(end_time, "%H:%M").time()
+
+        if start_t >= end_t:
+            print("Validation Failed: Start time is after or equal to End time")
+            return False
+        # --------------------------
+
+        # If validation passes, insert into Supabase
+        response = (
+            supabase.table("availability")
+            .insert(
+                {
+                    "therapist_id": therapist_id,
+                    "day": day.strip().title(),
+                    "start_time": f"{start_time}:00",
+                    "end_time": f"{end_time}:00",
+                    "start_date": start_date,
+                    "end_date": end_date,
+                }
+            )
+            .execute()
+        )
+        return True if response.data else False
+    except Exception as e:
+        print(f"Error adding availability: {e}")
+        return False
+
+
+def remove_counselor_availability(rule_id):
+    """Deletes a specific availability rule from the database."""
+    try:
+        # Target the 'availability' table and delete the row matching the ID
+        supabase.table("availability").delete().eq("id", rule_id).execute()
+        return True
+    except Exception as e:
+        print(f"Error removing availability: {e}")
+        return False
 
 
 # COUNSELOR SEARCH
@@ -302,53 +430,6 @@ def check_slot_taken(therapist_id, db_date_time):
         return True  # Fail safe
 
 
-# COUNSELOR AVAILABILITY
-def get_counselor_availability(therapist_id):
-    """Fetches the current weekly schedule for a specific counselor."""
-    try:
-        response = (
-            supabase.table("availability").select("*").eq("therapist_id", therapist_id).execute()
-        )
-        return response.data
-    except Exception as e:
-        print(f"Error fetching availability: {e}")
-        return []
-
-
-def add_counselor_availability(therapist_id, day, start_time, end_time):
-    """Inserts a new day/time rule into the availability table."""
-    try:
-        # Standardize formatting to ensure the calendar reads it correctly later
-        response = (
-            supabase.table("availability")
-            .insert(
-                {
-                    "therapist_id": therapist_id,
-                    "day": day.strip().title(),
-                    "start_time": f"{start_time}:00",  # Appending seconds for DB standard
-                    "end_time": f"{end_time}:00",
-                }
-            )
-            .execute()
-        )
-
-        return True if response.data else False
-    except Exception as e:
-        print(f"Error adding availability: {e}")
-        return False
-
-
-def remove_counselor_availability(rule_id):
-    """Deletes a specific availability rule from the database."""
-    try:
-        # Target the 'availability' table and delete the row matching the ID
-        supabase.table("availability").delete().eq("id", rule_id).execute()
-        return True
-    except Exception as e:
-        print(f"Error removing availability: {e}")
-        return False
-
-
 # APPOINTMENT CREATION & CANCELLATION
 def create_appointment(therapist_id, date_str, slot, appointment_type, user_id=None):
     if user_id is None:
@@ -445,4 +526,39 @@ def cancel_appointment(appointment_id, reason):
 
     except Exception as e:
         print(f"Error cancelling appointment in Supabase: {e}")
+        return False
+
+
+def reschedule_appointment(appointment_id, therapist_id, date_str, slot):
+    """
+    Updates an existing appointment to a new date and time,
+    ensuring the new slot is not already taken.
+    """
+    try:
+        # 1. Format the new date and time exactly like we do in create_appointment
+        raw_datetime = f"{date_str} {slot.upper()}"
+        parsed_dt = datetime.strptime(raw_datetime, "%Y-%m-%d %I.%M %p")
+        db_date_time = parsed_dt.strftime("%Y-%m-%d %H:%M:%S")
+    except Exception as e:
+        print(f"Error converting date format: {e}")
+        return False
+
+    # 2. Check if the new slot is taken by ANYONE
+    if check_slot_taken(therapist_id, db_date_time):
+        print("Slot is already booked by someone else. Aborting reschedule.")
+        return False
+
+    # 3. Update the existing record in Supabase
+    try:
+        response = (
+            supabase.table("appointment")
+            .update({"date_time": db_date_time})
+            .eq("id", appointment_id)
+            .execute()
+        )
+
+        # Return True if the update actually modified a row
+        return bool(response.data)
+    except Exception as e:
+        print(f"Error rescheduling appointment in Supabase: {e}")
         return False
