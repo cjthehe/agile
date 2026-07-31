@@ -60,3 +60,35 @@ h6.fw-bold { color: var(--color-lavender); }
     padding: 0.5rem;
     border-radius: 0.5rem;
 }
+
+.btn-counselor {
+    background: #80CBC4;
+    color: white;
+    border: none;
+}
+
+.btn-counselor:hover {
+    background: #4FA99F;
+    color: white;
+}
+
+.edu-btn {
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        padding: 0.5rem 1.25rem;
+        border-radius: 50px;
+        background-color: #F791A9;
+        color: white;
+        font-weight: 600;
+        text-decoration: none;
+        border: none;
+        transition: all 0.2s ease;
+}
+
+.edu-btn:hover {
+        background-color: #B84C68;
+        color: white;
+        transform: translateY(-2px);
+}
