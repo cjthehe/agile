@@ -33,8 +33,11 @@ from appointment_booking import (
 )
 from auth import auth as auth_blueprint
 from database import supabase
+from educational_resources import EducationalResourceService
 from register import register as register_blueprint
 from wellbeing_tracking import wellbeing_bp
+
+educational_resources_service = EducationalResourceService()
 
 app = Flask(__name__)
 app.secret_key = "your_secret_key"  # Required for flash messages and sessions
@@ -234,6 +237,28 @@ def profile():
     today_date = datetime.now().strftime("%Y-%m-%d")
 
     return render_template("profile.html", user=user, today_date=today_date)
+
+
+@app.route("/educational-resources", methods=["GET"])
+def educational_resources_dashboard():
+    if not (session.get("user_id") or session.get("user") or session.get("id")):
+        flash("Please log in to access educational resources.", "warning")
+        return redirect(url_for("auth.login_page"))
+
+    query = request.args.get("q", "").strip()
+
+    if query:
+        resources, message = educational_resources_service.search_resources(query)
+    else:
+        resources = educational_resources_service.browse_resources()
+        message = None
+
+    return render_template(
+        "educational_resources.html",
+        resources=resources,
+        query=query,
+        message=message,
+    )
 
 
 # ==========================================
