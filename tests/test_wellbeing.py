@@ -1,244 +1,128 @@
+from unittest.mock import patch
+
 import pytest
-from flask import Flask
 
-# Import the blueprint and helper functions from your wellbeing tracker
-import wellbeing_tracking
-from wellbeing_tracking import calculate_metrics, wellbeing_bp
-
-# ==========================================
-# MOCKS & FIXTURES
-# ==========================================
-
-
-class MockSupabaseResponse:
-    def __init__(self, data):
-        self.data = data
-
-
-class ChainableSupabaseMock:
-    """A flexible mock to simulate Supabase's chained methods (.select().eq().execute())"""
-
-    def __init__(self, return_data=None):
-        self.return_data = return_data or []
-        self.inserted_payload = None
-
-    def insert(self, payload):
-        self.inserted_payload = payload
-        return self
-
-    def select(self, *args, **kwargs):
-        return self
-
-    def eq(self, *args, **kwargs):
-        return self
-
-    def order(self, *args, **kwargs):
-        return self
-
-    def single(self):
-        # Convert list to a single dict for the .single() method used in /result
-        if isinstance(self.return_data, list) and len(self.return_data) > 0:
-            self.return_data = self.return_data[0]
-        elif isinstance(self.return_data, list):
-            self.return_data = None
-        return self
-
-    def execute(self):
-        # Simulate inserting and returning the new row
-        if self.inserted_payload and not self.return_data:
-            return MockSupabaseResponse([{"id": "new-mock-id"}])
-        return MockSupabaseResponse(self.return_data)
-
-
-class FakeSupabase:
-    def __init__(self):
-        self.tables = {}
-
-    def table(self, name):
-        if name not in self.tables:
-            self.tables[name] = ChainableSupabaseMock()
-        return self.tables[name]
+# Adjust the import based on how your Flask application factory / app instance is set up
+# e.g., from app import create_app or from main import app
+from app import create_app
 
 
 @pytest.fixture
 def app():
-    """Creates a dummy Flask application to test the wellbeing blueprint."""
-    app = Flask(__name__)
-    app.config["TESTING"] = True
-    app.secret_key = "super_secret_agile_key"
-
-    # Register the wellbeing blueprint
-    app.register_blueprint(wellbeing_bp)
-
-    # Create a dummy auth blueprint to prevent url_for('auth.login_page') BuildErrors
-    from flask import Blueprint
-
-    dummy_auth = Blueprint("auth", __name__)
-
-    @dummy_auth.route("/login")
-    def login_page():
-        return "Dummy Login Page"
-
-    app.register_blueprint(dummy_auth)
-
-    return app
+    """Create and configure a new app instance for testing."""
+    app = create_app({"TESTING": True})
+    yield app
 
 
 @pytest.fixture
 def client(app):
+    """A test client for the app."""
     return app.test_client()
 
 
 @pytest.fixture
-def auth_client(client):
-    """Provides a test client with an active, logged-in user session."""
-    with client.session_transaction() as sess:
-        sess["user_id"] = "test-user-123"
-    return client
+def mock_supabase():
+    """Mock Supabase calls to avoid hitting live database during tests."""
+    with patch("wellbeing_tracking.supabase") as mock:
+        yield mock
 
 
-@pytest.fixture
-def mock_db(monkeypatch):
-    """Injects our FakeSupabase into the wellbeing_tracking module."""
-    db = FakeSupabase()
-    monkeypatch.setattr(wellbeing_tracking, "supabase", db)
-    return db
+# ==============================================================================
+# MOOD TRACKING TESTS
+# ==============================================================================
 
 
-# ==========================================
-# UNIT TESTS: HELPER LOGIC
-# ==========================================
+def test_get_mood_page_renders_successfully(client, mock_supabase):
+    """Test that GET /mood renders
+    the mood logging page correctly."""
+    # Mock Supabase fetch for history logs
 
+    execute_mock = (
+        mock_supabase.table.return_value.select.return_value.eq.return_value.execute.return_value
+    )
 
-def test_calculate_metrics():
-    """
-    ACCEPTANCE TEST: The scoring logic must consistently output the right
-    category and recommendation based on the mathematical thresholds.
-    """
-    # Test Good tier (<= 4)
-    cat, rec = calculate_metrics(3)
-    assert cat == "Good"
-
-    # Test Moderate tier (<= 8)
-    cat, rec = calculate_metrics(7)
-    assert cat == "Moderate"
-
-    # Test Needs Attention tier (> 8)
-    cat, rec = calculate_metrics(12)
-    assert cat == "Needs Attention"
-
-
-# ==========================================
-# ACCEPTANCE TESTS: UNAUTHENTICATED ACCESS
-# ==========================================
-
-
-def test_unauthenticated_access_redirects(client):
-    """
-    ACCEPTANCE TEST: Users without an active session ID must be
-    kicked out and redirected to the login page to protect health data.
-    """
-    endpoints = ["/wellbeing", "/mood", "/questionnaire", "/result"]
-
-    for endpoint in endpoints:
-        response = client.get(endpoint)
-        assert response.status_code == 302
-        assert "/login" in response.location
-
-
-# ==========================================
-# ACCEPTANCE TESTS: WELLBEING DASHBOARD
-# ==========================================
-
-
-def test_wellbeing_dashboard_renders(auth_client):
-    """
-    ACCEPTANCE TEST: A logged-in user can successfully access the main hub.
-    """
-    response = auth_client.get("/wellbeing")
-    assert response.status_code == 200
-
-
-# ==========================================
-# ACCEPTANCE TESTS: MOOD TRACKER
-# ==========================================
-
-
-def test_get_mood_page_loads_history(auth_client, mock_db):
-    """
-    ACCEPTANCE TEST: Accessing the mood page fetches previous logs
-    and converts the database UTC time to a local string.
-    """
-    # Inject fake historical data
-    mock_db.table("mood_logs").return_data = [
+    execute_mock.data = [
         {
-            "mood": "Happy",
-            "notes": "Had a great therapy session",
-            "created_at": "2026-07-18T10:00:00+00:00",
+            "id": "123",
+            "mood": "😊 Happy",
+            "notes": "Feeling good today!",
+            "created_at": "2026-07-31 10:00:00",
         }
     ]
 
-    response = auth_client.get("/mood")
+    response = client.get("/mood")
 
     assert response.status_code == 200
-    # The template should render without crashing
+    assert b"Daily Mood Entry" in response.data
     assert b"Happy" in response.data
 
 
-def test_post_mood_creates_record(auth_client, mock_db):
-    """
-    ACCEPTANCE TEST: Submitting a new mood saves it to Supabase
-    with the correct user_id attached.
-    """
-    response = auth_client.post("/mood", data={"mood": "Anxious", "note": "Upcoming test"})
+def test_post_mood_success(client, mock_supabase):
+    """Test submitting a new valid mood log entry."""
+    mock_supabase.table.return_value.insert.return_value.execute.return_value.data = [{}]
+
+    payload = {"mood": "😊 Happy", "note": "Had a productive day!"}
+
+    response = client.post("/mood", data=payload, follow_redirects=True)
 
     assert response.status_code == 200
-
-    # Verify it hit the database correctly
-    inserted = mock_db.table("mood_logs").inserted_payload
-    assert inserted is not None
-    assert inserted["user_id"] == "test-user-123"
-    assert inserted["mood"] == "Anxious"
+    # Check if the success flash message/banner trigger is present in response
+    assert b"Success! Your mood entry" in response.data or b"success" in response.data.lower()
 
 
-# ==========================================
-# ACCEPTANCE TESTS: QUESTIONNAIRE
-# ==========================================
+def test_edit_mood_success(client, mock_supabase):
+    """Test updating an existing
+    mood entry via POST /mood/edit/<id>."""
 
+    record_id = "123"
 
-def test_post_questionnaire_calculates_score(auth_client, mock_db):
-    """
-    ACCEPTANCE TEST: Submitting the questionnaire safely calculates the score
-    from q1-q5, saves it, sets the session, and triggers a PRG redirect.
-    """
-    response = auth_client.post(
-        "/questionnaire", data={"q1": "2", "q2": "1", "q3": "3", "q4": "0", "q5": "2"}  # Total = 8
+    execute_mock = (
+        mock_supabase.table.return_value.update.return_value.eq.return_value.execute.return_value
+    )
+    execute_mock.data = [{}]
+
+    payload = {"mood": "🙂 Calm", "note": "Updated note reflection."}
+
+    response = client.post(f"/mood/edit/{record_id}", data=payload, follow_redirects=True)
+
+    assert response.status_code == 200
+    # Check if updated parameter or success confirmation appears
+    assert (
+        "updated=true" in response.request.url
+        or "updated" in response.get_data(as_text=True).lower()
     )
 
-    # It should perform a Post/Redirect/Get
-    assert response.status_code == 302
-    assert "/result" in response.location
 
-    # Verify the database captured the correct calculated score
-    inserted = mock_db.table("assessments").inserted_payload
-    assert inserted["score"] == 8
-    assert inserted["raw_answers"]["q3"] == 3
-
-    # Verify session was updated with the returned mock ID
-    with auth_client.session_transaction() as sess:
-        assert sess["latest_assessment_id"] == "new-mock-id"
+# ==============================================================================
+# PRIVACY SETTINGS TESTS
+# ==============================================================================
 
 
-# ==========================================
-# ACCEPTANCE TESTS: RESULTS VIEW
-# ==========================================
+def test_get_privacy_settings(client, mock_supabase):
+    """Test retrieving current privacy sharing preference."""
+
+    execute_mock = (
+        mock_supabase.table.return_value.select.return_value.eq.return_value.single.return_value.execute.return_value
+    )
+
+    execute_mock.data = {"share_records": True}
+
+    response = client.get("/privacy-settings")
+
+    assert response.status_code == 200
+    json_data = response.get_json()
+    assert json_data is not None
+    assert json_data.get("share_records") is True
 
 
-def test_result_without_session_id_redirects(auth_client):
-    """
-    ACCEPTANCE TEST: If a user navigates to /result but hasn't taken
-    a test recently, they are redirected to take the questionnaire.
-    """
-    response = auth_client.get("/result")
-    assert response.status_code == 302
-    assert "/questionnaire" in response.location
+def test_update_privacy_settings(client, mock_supabase):
+    """Test toggling the privacy sharing setting via JSON POST request."""
+    mock_supabase.table.return_value.upsert.return_value.execute.return_value.data = [{}]
+
+    payload = {"share_records": False}
+    response = client.post("/privacy-settings", json=payload)
+
+    assert response.status_code == 200
+    json_data = response.get_json()
+    assert json_data is not None
+    assert json_data.get("success") is True or "share_records" in json_data

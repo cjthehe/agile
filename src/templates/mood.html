@@ -536,7 +536,6 @@
                             <span class="history-mood-badge">{{ record.mood }}</span>
                             <div class="history-meta-right">
                                 <span class="history-time">{{ record.datetime }}</span>
-                                {% if record.can_edit %}
                                 <button type="button" 
                                         class="btn-edit-sm" 
                                         data-id="{{ record.id }}" 
@@ -545,7 +544,6 @@
                                         onclick="openEditModal(this)">
                                     Edit
                                 </button>
-                                {% endif %}
                             </div>
                         </div>
                         {% if record.note %}
