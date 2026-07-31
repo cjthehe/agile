@@ -15,6 +15,7 @@ from appointment_booking import (
     get_counselor_availability,
     get_counselor_dashboard_appointments,
     get_dashboard_appointments,
+    get_patient_records_for_counselor,
     remove_counselor_availability,
     retrieve_slots,
     search_counselor,
@@ -159,6 +160,8 @@ def test_acceptance_retrieve_counselor_availability(valid_therapist_id):
     assert isinstance(slots, list)
     for slot in slots:
         assert "day" in slot or "start_time" in slot or "end_time" in slot
+        # NEW: Verify the new date range fields exist
+        assert "start_date" in slot or "end_date" in slot
 
 
 def test_acceptance_generate_time_slots():
@@ -229,8 +232,9 @@ def test_acceptance_get_all_counselors_with_availability():
     for counselor in counselors:
         assert "id" in counselor
         assert "name" in counselor
+        # Note: If you fully switched to 'smart_schedule' from the previous sprint,
+        # you might want to assert "smart_schedule" in counselor here instead.
         assert "formatted_hours" in counselor
-        assert "working_days" in counselor
 
 
 def test_acceptance_check_slot_availability(valid_therapist_id):
@@ -282,8 +286,15 @@ def test_acceptance_add_counselor_working_hours(valid_therapist_id):
     ACCEPTANCE TEST: As a counselor, I want to add my working hours
     so patients can see when I'm available.
     """
+    # NEW: Dynamically generate valid dates for the test
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    future_str = (datetime.now() + timedelta(days=90)).strftime("%Y-%m-%d")
+
     # When: I add working hours for Monday 9 AM to 5 PM
-    success = add_counselor_availability(valid_therapist_id, "Monday", "09:00", "17:00")
+    # NEW: Pass all 6 required arguments to match the updated app.py logic
+    success = add_counselor_availability(
+        valid_therapist_id, "Monday", "09:00", "17:00", today_str, future_str
+    )
 
     # Then: The system should confirm the addition
     assert isinstance(success, bool)
@@ -305,6 +316,8 @@ def test_acceptance_get_counselor_schedule(valid_therapist_id):
     assert isinstance(schedule, list)
     for rule in schedule:
         assert "therapist_id" in rule or "day" in rule
+        # NEW: Verify the database is returning our new date range columns
+        assert "start_date" in rule and "end_date" in rule
 
 
 def test_acceptance_remove_counselor_working_hours():
@@ -324,6 +337,25 @@ def test_acceptance_remove_counselor_working_hours():
 
         # Then: The system should confirm removal
         assert isinstance(success, bool)
+
+
+def test_acceptance_view_patient_records(valid_counselor_id, valid_patient_id):
+    """
+    ACCEPTANCE TEST: As a counselor, I want to view my patient's wellbeing records
+    so that I can better prepare for our upcoming session.
+    """
+    # Given: A patient who has consented to share records with their counselor
+    # (Assume setup fixture handles the consent flag in the DB)
+
+    # When: The counselor requests the patient's wellbeing records
+    response = get_patient_records_for_counselor(valid_patient_id, valid_counselor_id)
+
+    # Then: The system should return the patient's mood logs and assessments
+    assert isinstance(response, dict)
+    assert response.get("access_granted") is True
+    assert "mood_logs" in response
+    assert "assessments" in response
+    assert isinstance(response["mood_logs"], list)
 
 
 # ==========================================
@@ -400,6 +432,32 @@ def test_acceptance_create_appointment(valid_therapist_id, valid_date_str):
         assert apt.get("therapist_id") == valid_therapist_id
         assert apt.get("appointment_type") == "In-Person"
         assert apt.get("status").lower() == "upcoming"
+
+
+def test_acceptance_reschedule_appointment(valid_patient_id):
+    """
+    ACCEPTANCE TEST: As a patient, I want to reschedule an existing appointment
+    so that I can adjust my session if my availability changes.
+    """
+    # Given: The patient has an existing upcoming appointment
+    upcoming_appointments = get_patient_appointments(valid_patient_id)
+
+    if upcoming_appointments and len(upcoming_appointments) > 0:
+        appointment_id = upcoming_appointments[0].get("id")
+
+        # Determine a new valid future date
+        new_date = (datetime.now() + timedelta(days=14)).strftime("%Y-%m-%d")
+        new_time = "14:00"
+
+        # When: The patient reschedules the appointment
+        success = reschedule_appointment(appointment_id, new_date, new_time)
+
+        # Then: The system should confirm the update and reflect the new time
+        assert isinstance(success, bool)
+        if success:
+            updated_appointment = get_appointment_details(appointment_id)
+            assert updated_appointment.get("date") == new_date
+            assert updated_appointment.get("time") == new_time
 
 
 def test_acceptance_create_appointment_missing_therapist(valid_date_str):

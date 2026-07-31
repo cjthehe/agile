@@ -17,6 +17,7 @@ from werkzeug.utils import secure_filename
 from admin import admin as admin_blueprint
 from appointment_booking import (
     add_counselor_availability,
+    auto_complete_past_appointments,
     cancel_appointment,
     create_appointment,
     get_all_appointments,
@@ -37,6 +38,14 @@ from wellbeing_tracking import wellbeing_bp
 
 app = Flask(__name__)
 app.secret_key = "your_secret_key"  # Required for flash messages and sessions
+
+
+def create_app(config=None):
+    """Create and configure the Flask application instance for tests and runtime use."""
+    if config:
+        app.config.update(config)
+    return app
+
 
 # ==========================================
 # FILE UPLOAD CONFIGURATION
@@ -250,10 +259,18 @@ def appointment_dashboard():
 
 @app.route("/counselor/dashboard")
 def counselor_dashboard():
-    therapist_id = 1
+    # 1. Run the auto-sweep FIRST so the database is clean
+    # before we fetch the dashboard data!
+    auto_complete_past_appointments()
 
+    # 2. Generate today's date as a string (e.g., "2026-07-20")
+    today_date = datetime.now().strftime("%Y-%m-%d")
+
+    # 3. Proceed with your existing data fetching
+    therapist_id = 1
     dashboard_data = get_counselor_dashboard_appointments(therapist_id)
 
+    # 4. Render the template, ensuring today_date is passed to Jinja
     return render_template(
         "counselor_dashboard.html",
         upcoming_count=dashboard_data["upcoming_count"],
@@ -261,6 +278,7 @@ def counselor_dashboard():
         upcoming_appointments=dashboard_data["upcoming_appointments"],
         completed_appointments=dashboard_data["completed_appointments"],
         has_older=dashboard_data["has_older"],
+        today_date=today_date,  # <--- Pass the new variable here!
     )
 
 
@@ -276,7 +294,14 @@ def manage_availability():
         start_time = request.form.get("start_time")
         end_time = request.form.get("end_time")
 
-        success = add_counselor_availability(therapist_id, day, start_time, end_time)
+        # 1. Grab the new fields from the form
+        start_date = request.form.get("start_date")
+        end_date = request.form.get("end_date")
+
+        # 2. Pass all 6 arguments to the function
+        success = add_counselor_availability(
+            therapist_id, day, start_time, end_time, start_date, end_date
+        )
 
         if success:
             flash(f"Successfully added hours for {day}!", "success")
@@ -305,8 +330,18 @@ def remove_availability(rule_id):
 def handle_update_status(appointment_id):
     new_status = request.form.get("status")
 
-    success = update_appointment_status(appointment_id, new_status)
+    # SECURITY CHECK: Fetch the appointment to verify its date
+    response = supabase.table("appointment").select("date_time").eq("id", appointment_id).execute()
+    if response.data:
+        apt_date = response.data[0]["date_time"].split(" ")[0]  # Extracts just the YYYY-MM-DD
+        today = datetime.now().strftime("%Y-%m-%d")
 
+        if apt_date > today:
+            flash("You cannot update the status of a future appointment.", "warning")
+            return redirect(url_for("counselor_dashboard"))
+
+    # If it passes the check, update the database
+    success = update_appointment_status(appointment_id, new_status)
     if success:
         flash(f"Session successfully marked as {new_status}.", "success")
     else:
@@ -365,46 +400,6 @@ def handle_booking():
     return render_template("booking.html", counselors=counselors_data)
 
 
-@app.route("/reschedule/<int:appointment_id>", methods=["GET", "POST"])
-def reschedule_page(appointment_id):
-    if request.method == "POST":
-        therapist_id = int(request.form.get("counselor"))
-        new_date = request.form.get("date")
-        new_slot = request.form.get("slot")
-
-        success = reschedule_appointment(appointment_id, therapist_id, new_date, new_slot)
-
-        if success:
-            flash("Your appointment has been successfully rescheduled!", "success")
-        else:
-            flash(
-                "Failed to reschedule. That time slot may no longer be available.",
-                "danger",
-            )
-
-        return redirect(url_for("appointment_dashboard"))
-
-    response = supabase.table("appointment").select("*").eq("id", appointment_id).execute()
-    appointment = response.data[0]
-
-    counselors = get_all_counselors()
-
-    therapist = None
-    for c in counselors:
-        c_id = c["id"] if isinstance(c, dict) else c.id
-        if str(c_id) == str(appointment["therapist_id"]):
-            therapist = c
-            break
-
-    return render_template(
-        "booking.html",
-        counselors=counselors,
-        is_reschedule=True,
-        appointment_id=appointment_id,
-        therapist=therapist,
-    )
-
-
 @app.route("/appointments")
 def appointments():
     user_id = session.get("user_id")
@@ -450,17 +445,12 @@ def reschedule_page(appointment_id):
     # POST METHOD: The user clicked "Update Booking"
     # ==========================================
     if request.method == "POST":
-        # 1. Grab the submitted form data
-        # Note: Your HTML radio buttons use name="counselor", not "therapist_id"
         therapist_id = int(request.form.get("counselor"))
         new_date = request.form.get("date")
         new_slot = request.form.get("slot")
 
-        # 2. Trigger the database update function we built in the very beginning
-        # (Make sure reschedule_appointment is imported at the top of app.py!)
         success = reschedule_appointment(appointment_id, therapist_id, new_date, new_slot)
 
-        # 3. Flash a message and redirect back to the dashboard
         if success:
             flash("Your appointment has been successfully rescheduled!", "success")
         else:
@@ -476,18 +466,33 @@ def reschedule_page(appointment_id):
     response = supabase.table("appointment").select("*").eq("id", appointment_id).execute()
     appointment = response.data[0]
 
-    # 2. Fetch ALL counselors
-    counselors = get_all_counselors()
+    # We save their current time so we can unblock it in the calendar
+    current_date_time = appointment.get("date_time")
 
-    # 3. Find the specific therapist
-    therapist = None
-    for c in counselors:
-        c_id = c["id"] if isinstance(c, dict) else c.id
-        if str(c_id) == str(appointment["therapist_id"]):
-            therapist = c
-            break
+    # 2. Fetch ALL therapists directly
+    try:
+        res = supabase.table("therapist").select("*").execute()
+        counselors = res.data
+    except Exception as e:
+        print(f"Error fetching therapists: {e}")
+        counselors = []
 
-    # 4. Render the template
+    # 3. THE FIX: Attach available AND booked slots (just like the /book route!)
+    for counselor in counselors:
+        counselor["available_slots"] = retrieve_slots(counselor["id"])
+
+        # Fetch all booked slots
+        all_booked = get_booked_slots(counselor["id"])
+
+        # Filter out the user's CURRENT appointment so their own slot is free to select
+        counselor["booked_slots"] = [slot for slot in all_booked if slot != current_date_time]
+
+    # 4. Find the specific therapist from our newly populated list
+    therapist = next(
+        (c for c in counselors if str(c["id"]) == str(appointment["therapist_id"])), None
+    )
+
+    # 5. Render the template
     return render_template(
         "booking.html",
         counselors=counselors,

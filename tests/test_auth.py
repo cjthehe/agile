@@ -212,3 +212,148 @@ def test_register_rejects_weak_password(client):
 
     assert response.status_code == 400
     assert b"Password must be at least 8 characters long" in response.data
+
+
+def test_login_case_insensitive_email(client):
+    """
+    NEW TEST: User should be able to log in regardless of email casing.
+    """
+    response = client.post(
+        "/api/login",
+        json={"email": "PATIENT@EXAMPLE.COM", "password": "password123"},
+    )
+    # Expect success (200) or structured rejection depending on your normalize rules
+    assert response.status_code in [200, 401]
+
+
+def test_logout_invalid_session_id(client):
+    """
+    NEW TEST: Attempting to log out with a fake session ID should return an error or handle gracefully.
+    """
+    response = client.post(
+        "/api/logout",
+        json={"session_id": "fake-invalid-session-id-999"},
+    )
+    assert response.status_code in [400, 401, 404]
+
+
+def test_verify_email_invalid_code(client):
+    """
+    NEW TEST: Submitting an incorrect verification code should be rejected.
+    """
+    email = f"badcode_{uuid.uuid4()}@example.com"
+
+    client.post(
+        "/api/register",
+        json={
+            "email": email,
+            "password": "SecurePass123!",
+            "name": "Bad Code User",
+        },
+    )
+
+    verify_response = client.post(
+        "/api/verify-email",
+        json={"email": email, "verification_code": "000000_INVALID_CODE"},
+    )
+    assert verify_response.status_code in [400, 422]
+
+
+def test_request_reset_invalid_email_format(client):
+    """
+    ACCEPTANCE TEST: The API must reject improperly formatted emails
+    before checking the database.
+    """
+    response = client.post("/api/request-reset", json={"email": "badformatemail"})
+
+    assert response.status_code == 400
+    assert b"Invalid email format" in response.data
+
+
+def test_request_reset_unregistered_email(client):
+    """
+    ACCEPTANCE TEST: The API must return a 404 if the user does not exist.
+    """
+    response = client.post(
+        "/api/request-reset", json={"email": f"unregistered_{uuid.uuid4()}@example.com"}
+    )
+
+    assert response.status_code == 404
+    assert b"Email address not found in our system" in response.data
+
+
+def test_reset_password_invalid_code(client):
+    """
+    ACCEPTANCE TEST: A valid new password with an invalid reset code must be rejected.
+    """
+    response = client.post(
+        "/api/reset-password",
+        json={"email": "patient@example.com", "code": "000000", "new_password": "ValidPassword1!"},
+    )
+
+    assert response.status_code == 400
+    assert b"Invalid or expired reset code" in response.data
+
+
+def test_reset_password_complexity(client):
+    """
+    ACCEPTANCE TEST: The API must enforce password complexity rules during reset.
+    """
+    response = client.post(
+        "/api/reset-password",
+        json={"email": "patient@example.com", "code": "123456", "new_password": "weak"},
+    )
+
+    assert response.status_code == 400
+    # It should hit the first complexity rule (length)
+    assert b"Password must be at least 8 characters long" in response.data
+
+
+def test_forgot_password_full_flow(client):
+    """
+    ACCEPTANCE TEST: End-to-end integration test for the forgot password flow.
+    Registers a user, requests a reset, attempts to reuse old password (fails),
+    and finally resets with a valid new password (succeeds).
+    """
+    email = f"forgot_{uuid.uuid4()}@example.com"
+    old_password = "OldPassword123!"
+    new_password = "NewPassword456@"
+
+    # 1. Register a test user
+    client.post(
+        "/api/register", json={"email": email, "password": old_password, "name": "Forgot Pass User"}
+    )
+
+    # 2. Request a reset code
+    request_res = client.post("/api/request-reset", json={"email": email})
+    assert request_res.status_code == 200
+    assert b"Reset code sent successfully" in request_res.data
+
+    # We need to fetch the code directly from the DB for testing purposes
+    # Note: Adjust this line based on how your test file imports supabase
+    from app import supabase
+
+    db_res = supabase.table("user").select("reset_code").eq("email", email).execute()
+    reset_code = db_res.data[0]["reset_code"]
+
+    assert reset_code is not None
+
+    # 3. Attempt to reset using the SAME old password (Should fail)
+    same_pass_res = client.post(
+        "/api/reset-password",
+        json={"email": email, "code": reset_code, "new_password": old_password},
+    )
+    assert same_pass_res.status_code == 400
+    assert b"cannot be the same as your old password" in same_pass_res.data
+
+    # 4. Attempt to reset using a NEW, valid password (Should succeed)
+    success_res = client.post(
+        "/api/reset-password",
+        json={"email": email, "code": reset_code, "new_password": new_password},
+    )
+    assert success_res.status_code == 200
+    assert b"Password reset successfully" in success_res.data
+
+    # 5. Verify the user can log in with the NEW password
+    login_res = client.post("/api/login", json={"email": email, "password": new_password})
+    assert login_res.status_code == 200

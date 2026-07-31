@@ -78,8 +78,7 @@
                                 <h6 class="fw-bold mb-2 small text-uppercase text-muted">1. Select Date</h6>
                                 <input type="text" class="availability-date d-none" 
                                     data-counselor-id="{{ counselor.id }}" 
-                                    data-working-days='{{ counselor.working_days | default([]) | tojson }}'
-                                    data-slots-by-day='{{ counselor.slots_by_day | default({}) | tojson }}'>
+                                    data-smart-schedule='{{ counselor.smart_schedule | default({}) | tojson }}'>
                             </div>
 
                             <div class="col-md-6">
@@ -115,60 +114,47 @@
 </div>
 
 <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        const dateInputs = document.querySelectorAll('.availability-date');
+document.addEventListener("DOMContentLoaded", function() {
+    const dateInputs = document.querySelectorAll('.availability-date');
+    
+    dateInputs.forEach(input => {
+        // Parse our new smart dictionary: {"2026-10-05": ["09:00 - 10:00", "10:00 - 11:00"], ...}
+        const smartSchedule = JSON.parse(input.getAttribute('data-smart-schedule') || '{}');
+        const allowedDates = Object.keys(smartSchedule); // Extracts just the dates!
         
-        dateInputs.forEach(input => {
-            const workingDays = JSON.parse(input.getAttribute('data-working-days') || '[]');
+        flatpickr(input, {
+            inline: true,
+            minDate: "today",
+            enable: allowedDates, // Flatpickr Magic: Disables all dates EXCEPT these!
             
-            // Read the new dictionary that maps Day Integers -> Time Slots
-            const slotsByDay = JSON.parse(input.getAttribute('data-slots-by-day') || '{}');
-            
-            flatpickr(input, {
-                inline: true,
-                minDate: "today",
+            onChange: function(selectedDates, dateStr, instance) {
+                const counselorId = instance.element.getAttribute('data-counselor-id');
+                const slotsContainer = document.getElementById('slots-' + counselorId);
                 
-                disable: [
-                    function(date) {
-                        if (workingDays.length > 0) {
-                            return !workingDays.includes(date.getDay());
-                        }
-                        return true; 
-                    }
-                ],
+                slotsContainer.innerHTML = ''; 
                 
-                onChange: function(selectedDates, dateStr, instance) {
-                    const counselorId = instance.element.getAttribute('data-counselor-id');
-                    const slotsContainer = document.getElementById('slots-' + counselorId);
+                if (selectedDates.length > 0) {
+                    // Pull the slots directly from our dictionary using the date string
+                    const todaySlots = smartSchedule[dateStr] || [];
                     
-                    slotsContainer.innerHTML = ''; 
-                    
-                    // If a date was successfully selected
-                    if (selectedDates.length > 0) {
-                        // Get the integer of the day clicked (0 = Sun, 1 = Mon, etc.)
-                        const selectedDayInt = selectedDates[0].getDay();
-                        
-                        // Pull ONLY the slots for that specific day from our dictionary
-                        const todaySlots = slotsByDay[selectedDayInt] || [];
-                        
-                        if (todaySlots.length > 0) {
-                            todaySlots.forEach(slot => {
-                                const btnHtml = `
-                                    <div class="col-6">
-                                        <div class="btn btn-outline-primary w-100 rounded-pill p-2 fw-medium" style="cursor: default; font-size: 0.85rem;">
-                                            ${slot}
-                                        </div>
-                                    </div>`;
-                                slotsContainer.insertAdjacentHTML('beforeend', btnHtml);
-                            });
-                        } else {
-                            slotsContainer.innerHTML = '<div class="text-center text-muted py-3 w-100"><small>No slots available on this date.</small></div>';
-                        }
+                    if (todaySlots.length > 0) {
+                        todaySlots.forEach(slot => {
+                            const btnHtml = `
+                                <div class="col-6">
+                                    <div class="btn btn-outline-primary w-100 rounded-pill p-2 fw-medium" style="cursor: pointer; font-size: 0.85rem;" onclick="selectSlot('${dateStr}', '${slot}')">
+                                        ${slot}
+                                    </div>
+                                </div>`;
+                            slotsContainer.insertAdjacentHTML('beforeend', btnHtml);
+                        });
+                    } else {
+                        slotsContainer.innerHTML = '<div class="text-center text-muted py-3 w-100"><small>No slots available.</small></div>';
                     }
                 }
-            });
+            }
         });
     });
+});
 
     function filterCounselors() {
         const searchInput = document.getElementById('counselorSearch').value.toLowerCase();
