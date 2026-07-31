@@ -8,8 +8,7 @@
     </div>
 
     <div class="row justify-content-center g-4">
-        
-        <div class="col-md-5">
+        <div class="col-lg-4 col-md-6">
             <div class="card h-100 shadow-sm border-0 text-center p-4">
                 <div class="card-body">
                     <div class="bg-success bg-opacity-10 text-success rounded-circle d-inline-flex justify-content-center align-items-center mb-3" style="width: 70px; height: 70px; font-size: 2rem;">
@@ -17,7 +16,7 @@
                     </div>
                     <h4 class="fw-bold">Wellbeing Tracker</h4>
                     <p class="text-muted mb-4">Log your daily mood, track your progress, and review your wellbeing history.</p>
-                    
+
                     <div class="d-grid gap-2">
                         <a href="/wellbeing" class="btn btn-secondary rounded-pill py-2">Track Wellbeing</a>
                     </div>
@@ -25,7 +24,7 @@
             </div>
         </div>
 
-        <div class="col-md-5">
+        <div class="col-lg-4 col-md-6">
             <div class="card h-100 shadow-sm border-0 text-center p-4">
                 <div class="card-body">
                     <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex justify-content-center align-items-center mb-3" style="width: 70px; height: 70px; font-size: 2rem;">
@@ -33,7 +32,7 @@
                     </div>
                     <h4 class="fw-bold">Book Appointments</h4>
                     <p class="text-muted mb-4">Book a new session or manage your upcoming schedule with our therapists.</p>
-                    
+
                     <div class="d-grid gap-2">
                         <a href="/dashboard" class="btn btn-primary rounded-pill py-2">Manage Bookings</a>
                     </div>
@@ -41,6 +40,26 @@
             </div>
         </div>
 
+        <div class="col-lg-4 col-md-6">
+            <div class="card h-100 shadow-sm border-0 text-center p-4">
+                <div class="card-body">
+                    <div class="bg-info bg-opacity-10 text-info rounded-circle d-inline-flex justify-content-center align-items-center mb-3" style="width: 70px; height: 70px; font-size: 2rem;">
+                        📚
+                    </div>
+                    <h4 class="fw-bold">Educational Resources</h4>
+                    <p class="text-muted mb-4">Browse trusted articles, videos, and self-help guides for mental health support.</p>
+
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('educational_resources_dashboard') if session.get('user_id') or session.get('user') or session.get('id') else url_for('auth.login_page') }}"
+                        class="edu-btn">
+                            Explore Resources
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
     </div>
 </div>
 {% endblock %}

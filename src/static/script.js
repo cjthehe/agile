@@ -279,3 +279,5 @@ async function createCounselor() {
     messageEl.innerText = data.message || "Unable to create counselor.";
     messageEl.className = response.ok ? "text-success mt-3 text-center" : "text-danger mt-3 text-center";
 }
+
+

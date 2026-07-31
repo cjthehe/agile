@@ -1,9 +1,10 @@
 import re
 import secrets
 
-from flask import Blueprint, jsonify, render_template, request
+from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
 
 from database import supabase
+from educational_resources import EducationalResourceService
 
 try:
     # import shared helper to send emails (prints to console if SMTP not configured)
@@ -18,11 +19,97 @@ admin = Blueprint("admin", __name__)
 
 # simple in-memory fallback for local/testing runs
 fallback_counselors: dict[str, dict] = {}
+resource_service = EducationalResourceService()
 
 
 @admin.route("/admin", methods=["GET"])
 def admin_page():
-    return render_template("admin.html")
+    resources = resource_service.browse_resources()
+    return render_template("admin.html", resources=resources)
+
+
+@admin.route("/admin/resources", methods=["GET"])
+def admin_resources_page():
+
+    resources = resource_service.browse_resources()
+
+    categories = []
+    types = []
+
+    try:
+        category_result = supabase.rpc("get_enum_values", {"enum_name": "Category"}).execute()
+
+        categories = [item["enumlabel"] for item in category_result.data]
+
+        type_result = supabase.rpc("get_enum_values", {"enum_name": "resources_type"}).execute()
+
+        types = [item["enumlabel"] for item in type_result.data]
+
+    except Exception as e:
+        print(e)
+
+    return render_template(
+        "admin_resources.html", resources=resources, categories=categories, types=types
+    )
+
+
+@admin.route("/admin/resources/create", methods=["POST"])
+def create_resource():
+    payload = {
+        "title": request.form.get("title", "").strip(),
+        "description": request.form.get("description", "").strip(),
+        "category": request.form.get("category", "").strip(),
+        "type": request.form.get("type", "").strip().lower(),
+        "thumbnail_url": request.form.get("thumbnail_url", "").strip(),
+        "content_url": request.form.get("content_url", "").strip(),
+        "tags": request.form.get("tags", "").strip(),
+    }
+
+    try:
+        _, message = resource_service.upload_resource(payload)
+        flash(message, "success")
+    except Exception as exc:  # pragma: no cover - user-facing validation
+        flash(str(exc), "danger")
+
+    return redirect(url_for("admin.admin_resources_page"))
+
+
+@admin.route("/admin/resources/<resource_id>/update", methods=["POST"])
+def update_resource(resource_id: str):
+    resource_id = int(resource_id)
+    updates = {
+        "title": request.form.get("title", "").strip(),
+        "description": request.form.get("description", "").strip(),
+        "category": request.form.get("category", "").strip(),
+        "type": request.form.get("type", "").strip().lower(),
+        "thumbnail_url": request.form.get("thumbnail_url", "").strip(),
+        "content_url": request.form.get("content_url", "").strip(),
+        "tags": request.form.get("tags", "").strip(),
+    }
+
+    try:
+        _, message = resource_service.update_resource(resource_id, updates)
+        flash(message, "success")
+    except Exception as exc:  # pragma: no cover - user-facing validation
+        flash(str(exc), "danger")
+
+    return redirect(url_for("admin.admin_resources_page"))
+
+
+@admin.route("/admin/resources/<resource_id>/delete", methods=["POST"])
+def delete_resource(resource_id: str):
+    resource_id = int(resource_id)
+    success, message = resource_service.delete_resource(resource_id, confirmed=True)
+    flash(message, "success" if success else "danger")
+    return redirect(url_for("admin.admin_resources_page"))
+
+
+def get_enum_values(enum_name):
+    try:
+        pass
+
+    except Exception:
+        return []
 
 
 @admin.route("/api/admin/create-counselor", methods=["POST"])
