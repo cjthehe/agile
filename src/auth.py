@@ -116,7 +116,7 @@ def login():
         stored_password = user.get("password")
         if not (check_password_hash(stored_password, password) or stored_password == password):
             return jsonify({"message": "Invalid email or password"}), 401
-        if not user.get("get", user.get("is_verified")):
+        if not user.get("is_verified"):
             return jsonify({"message": "Email not verified"}), 403
         user["user_role"] = user.get("user_role") or "patient"
 
@@ -221,10 +221,6 @@ def request_reset():
             jsonify({"message": "Invalid email format. Please include an '@' and a valid domain."}),
             400,
         )
-
-    # (Optional) If you ONLY want to allow Gmail users, comment out the regex above and use this instead:
-    # if not email.endswith("@gmail.com"):
-    #     return jsonify({"message": "Only @gmail.com addresses are supported."}), 400
 
     # Generate a secure 6-digit code
     reset_code = str(secrets.randbelow(1000000)).zfill(6)

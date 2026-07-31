@@ -156,7 +156,6 @@ def auto_complete_past_appointments():
     cutoff_time = (datetime.now() - timedelta(hours=2)).strftime("%Y-%m-%d %H:%M:%S")
 
     try:
-        # Tell Supabase: "Update status to Completed WHERE status is Booked AND date_time <= cutoff_time"
         supabase.table("appointment").update({"status": "Completed"}).eq("status", "Booked").lte(
             "date_time", cutoff_time
         ).execute()
@@ -182,7 +181,6 @@ def build_smart_schedule(counselor_rules):
 
             # If the rule applies to this day AND the date falls within the rule's active range
             if rule["day"] == day_name and rule_start <= check_date <= rule_end:
-                # Add to our dictionary (In reality, you'd calculate slots based on start/end time here)
                 if date_str not in smart_schedule:
                     smart_schedule[date_str] = []
                 smart_schedule[date_str].append(

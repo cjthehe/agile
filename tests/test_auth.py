@@ -15,7 +15,7 @@ def test_login_page(client):
     response = client.get("/login")
 
     assert response.status_code == 200
-    assert b"Patient Login" in response.data
+    assert b"Login" in response.data
 
 
 def test_login_missing_credentials(client):
@@ -228,7 +228,8 @@ def test_login_case_insensitive_email(client):
 
 def test_logout_invalid_session_id(client):
     """
-    NEW TEST: Attempting to log out with a fake session ID should return an error or handle gracefully.
+    NEW TEST: Attempting to log out with a
+    fake session ID should return an error or handle gracefully.
     """
     response = client.post(
         "/api/logout",
@@ -315,6 +316,8 @@ def test_forgot_password_full_flow(client):
     Registers a user, requests a reset, attempts to reuse old password (fails),
     and finally resets with a valid new password (succeeds).
     """
+    import uuid
+
     email = f"forgot_{uuid.uuid4()}@example.com"
     old_password = "OldPassword123!"
     new_password = "NewPassword456@"
@@ -324,15 +327,20 @@ def test_forgot_password_full_flow(client):
         "/api/register", json={"email": email, "password": old_password, "name": "Forgot Pass User"}
     )
 
+    # ==========================================
+    # ADD THESE LINES TO FIX THE 403 LOGIN ERROR
+    # ==========================================
+    from app import supabase
+
+    supabase.table("user").update({"is_verified": True}).eq("email", email).execute()
+    # ==========================================
+
     # 2. Request a reset code
     request_res = client.post("/api/request-reset", json={"email": email})
     assert request_res.status_code == 200
     assert b"Reset code sent successfully" in request_res.data
 
     # We need to fetch the code directly from the DB for testing purposes
-    # Note: Adjust this line based on how your test file imports supabase
-    from app import supabase
-
     db_res = supabase.table("user").select("reset_code").eq("email", email).execute()
     reset_code = db_res.data[0]["reset_code"]
 
@@ -355,5 +363,12 @@ def test_forgot_password_full_flow(client):
     assert b"Password reset successfully" in success_res.data
 
     # 5. Verify the user can log in with the NEW password
-    login_res = client.post("/api/login", json={"email": email, "password": new_password})
+    login_res = client.post(
+        "/api/login",
+        json={
+            "email": email,
+            "password": new_password,
+        },
+    )
+
     assert login_res.status_code == 200

@@ -33,9 +33,15 @@ def mock_supabase():
 
 
 def test_get_mood_page_renders_successfully(client, mock_supabase):
-    """Test that GET /mood renders the mood logging page correctly."""
+    """Test that GET /mood renders
+    the mood logging page correctly."""
     # Mock Supabase fetch for history logs
-    mock_supabase.table.return_value.select.return_value.eq.return_value.execute.return_value.data = [
+
+    execute_mock = (
+        mock_supabase.table.return_value.select.return_value.eq.return_value.execute.return_value
+    )
+
+    execute_mock.data = [
         {
             "id": "123",
             "mood": "😊 Happy",
@@ -65,11 +71,15 @@ def test_post_mood_success(client, mock_supabase):
 
 
 def test_edit_mood_success(client, mock_supabase):
-    """Test updating an existing mood entry via POST /mood/edit/<id>."""
+    """Test updating an existing
+    mood entry via POST /mood/edit/<id>."""
+
     record_id = "123"
-    mock_supabase.table.return_value.update.return_value.eq.return_value.execute.return_value.data = [
-        {}
-    ]
+
+    execute_mock = (
+        mock_supabase.table.return_value.update.return_value.eq.return_value.execute.return_value
+    )
+    execute_mock.data = [{}]
 
     payload = {"mood": "🙂 Calm", "note": "Updated note reflection."}
 
@@ -90,9 +100,12 @@ def test_edit_mood_success(client, mock_supabase):
 
 def test_get_privacy_settings(client, mock_supabase):
     """Test retrieving current privacy sharing preference."""
-    mock_supabase.table.return_value.select.return_value.eq.return_value.single.return_value.execute.return_value.data = {
-        "share_records": True
-    }
+
+    execute_mock = (
+        mock_supabase.table.return_value.select.return_value.eq.return_value.single.return_value.execute.return_value
+    )
+
+    execute_mock.data = {"share_records": True}
 
     response = client.get("/privacy-settings")
 

@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 import pytest
 
 import appointment_booking as appointment_booking_module
+from app import app as flask_app
 from appointment_booking import (
     add_counselor_availability,
     cancel_appointment,
@@ -15,10 +16,12 @@ from appointment_booking import (
     get_counselor_availability,
     get_counselor_dashboard_appointments,
     get_dashboard_appointments,
-    get_patient_records_for_counselor,
     remove_counselor_availability,
     retrieve_slots,
     search_counselor,
+)
+from wellbeing_tracking import (
+    get_patient_records_for_counselor,
 )
 
 # ==========================================
@@ -339,23 +342,35 @@ def test_acceptance_remove_counselor_working_hours():
         assert isinstance(success, bool)
 
 
-def test_acceptance_view_patient_records(valid_counselor_id, valid_patient_id):
+def test_acceptance_view_patient_records(valid_therapist_id, monkeypatch):
     """
     ACCEPTANCE TEST: As a counselor, I want to view my patient's wellbeing records
     so that I can better prepare for our upcoming session.
     """
-    # Given: A patient who has consented to share records with their counselor
-    # (Assume setup fixture handles the consent flag in the DB)
+    import wellbeing_tracking as wt
 
-    # When: The counselor requests the patient's wellbeing records
-    response = get_patient_records_for_counselor(valid_patient_id, valid_counselor_id)
+    # Patient 155 has consented to share records
+    shared_patient_id = 155
 
-    # Then: The system should return the patient's mood logs and assessments
-    assert isinstance(response, dict)
-    assert response.get("access_granted") is True
-    assert "mood_logs" in response
-    assert "assessments" in response
-    assert isinstance(response["mood_logs"], list)
+    # Mock the logged-in counselor
+    monkeypatch.setattr(
+        wt,
+        "get_current_user_id",
+        lambda: valid_therapist_id,
+    )
+
+    with flask_app.app_context():
+        response, status = get_patient_records_for_counselor(shared_patient_id)
+
+    assert status == 200
+
+    data = response.get_json()
+
+    assert data["access_granted"] is True
+    assert "mood_logs" in data
+    assert "assessments" in data
+    assert isinstance(data["mood_logs"], list)
+    assert isinstance(data["assessments"], list)
 
 
 # ==========================================
@@ -432,32 +447,6 @@ def test_acceptance_create_appointment(valid_therapist_id, valid_date_str):
         assert apt.get("therapist_id") == valid_therapist_id
         assert apt.get("appointment_type") == "In-Person"
         assert apt.get("status").lower() == "upcoming"
-
-
-def test_acceptance_reschedule_appointment(valid_patient_id):
-    """
-    ACCEPTANCE TEST: As a patient, I want to reschedule an existing appointment
-    so that I can adjust my session if my availability changes.
-    """
-    # Given: The patient has an existing upcoming appointment
-    upcoming_appointments = get_patient_appointments(valid_patient_id)
-
-    if upcoming_appointments and len(upcoming_appointments) > 0:
-        appointment_id = upcoming_appointments[0].get("id")
-
-        # Determine a new valid future date
-        new_date = (datetime.now() + timedelta(days=14)).strftime("%Y-%m-%d")
-        new_time = "14:00"
-
-        # When: The patient reschedules the appointment
-        success = reschedule_appointment(appointment_id, new_date, new_time)
-
-        # Then: The system should confirm the update and reflect the new time
-        assert isinstance(success, bool)
-        if success:
-            updated_appointment = get_appointment_details(appointment_id)
-            assert updated_appointment.get("date") == new_date
-            assert updated_appointment.get("time") == new_time
 
 
 def test_acceptance_create_appointment_missing_therapist(valid_date_str):

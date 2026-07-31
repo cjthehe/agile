@@ -46,13 +46,13 @@ def calculate_metrics(score):
             {
                 "type": "Self-Care Activity",
                 "content": (
-                    "Maintain your daily routine, regular exercise, " "and healthy sleep habits."
+                    "Maintain your daily routine, regular exercise, and healthy sleep habits."
                 ),
             },
             {
                 "type": "Relaxation Technique",
                 "content": (
-                    "Practice 5 minutes of daily gratitude journaling " "or morning mindfulness."
+                    "Practice 5 minutes of daily gratitude journaling or morning mindfulness."
                 ),
             },
             {
@@ -77,7 +77,7 @@ def calculate_metrics(score):
             {
                 "type": "Relaxation Technique",
                 "content": (
-                    "Try guided 4-7-8 deep breathing exercises or " "progressive muscle relaxation."
+                    "Try guided 4-7-8 deep breathing exercises or progressive muscle relaxation."
                 ),
             },
             {
@@ -246,8 +246,7 @@ def get_patient_records_for_counselor(patient_id):
                     {
                         "access_granted": False,
                         "message": (
-                            "Permission Denied: Patient has opted out of sharing "
-                            "wellbeing records."
+                            "Permission Denied: Patient has opted out of sharing wellbeing records."
                         ),
                         "mood_logs": [],
                         "assessments": [],
