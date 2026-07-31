@@ -1,0 +1,278 @@
+{% extends "base.html" %}
+
+{% block title %}Profile Settings - MindCare Clinic{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    
+    <!-- Profile Summary Card -->
+    <div class="col-lg-4 mb-4">
+      <div class="card border-0 shadow-sm rounded-4 text-center p-4">
+        <div class="position-relative d-inline-block mx-auto mb-3">
+          <img id="avatarPreview" 
+               src="{% if user and user.profile_picture %}{{ user.profile_picture if user.profile_picture.startswith('/') else '/' + user.profile_picture }}{% else %}https://cdn-icons-png.flaticon.com/512/847/847969.png{% endif %}" 
+               alt="Profile Picture" 
+               class="rounded-circle border border-3 border-white shadow object-fit-cover bg-light" 
+               style="width: 110px; height: 110px;"
+               onerror="this.onerror=null; this.src='https://cdn-icons-png.flaticon.com/512/847/847969.png';">
+        </div>
+
+        <h5 class="fw-bold text-dark mb-1">{{ user.full_name or 'Account User' }}</h5>
+        <p class="text-muted small mb-3">{{ user.email }}</p>
+
+        <span class="badge bg-success-subtle text-success px-3 py-2 rounded-pill d-inline-flex align-items-center justify-content-center gap-1 mx-auto" style="width: fit-content;">
+          <i class="bi bi-shield-check"></i> Verified Account
+        </span>
+      </div>
+    </div>
+
+    <!-- Profile Settings Form -->
+    <div class="col-lg-7">
+      
+      <!-- Instant Success Banner (Hidden by Default) -->
+      <div id="successAlert" class="alert alert-success alert-dismissible fade show rounded-4 border-0 shadow-sm mb-4 d-none" role="alert">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-check-circle-fill fs-5"></i>
+          <div>
+            <strong>Validation Successful!</strong> Saving your profile updates...
+          </div>
+        </div>
+      </div>
+
+      <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5">
+        <div class="d-flex align-items-center justify-content-between mb-4 pb-2 border-bottom">
+          <div>
+            <h4 class="fw-bold text-dark mb-1">Personal Details</h4>
+            <p class="text-muted small mb-0">Update your information and manage your public avatar.</p>
+          </div>
+          <span class="badge bg-light text-secondary border px-3 py-2 rounded-3">
+            <i class="bi bi-person-gear me-1"></i> Settings
+          </span>
+        </div>
+
+        <form action="{{ url_for('profile') }}" method="POST" enctype="multipart/form-data" id="profileForm" novalidate>
+          
+          <!-- Locked Email Field -->
+          <div class="mb-4">
+            <label for="email" class="form-label fw-semibold text-dark d-flex align-items-center gap-2">
+              Email Address 
+              <span class="badge bg-light text-muted border fw-normal" style="font-size: 0.75rem;">
+                <i class="bi bi-lock-fill me-1"></i> Locked
+              </span>
+            </label>
+            <div class="input-group">
+              <span class="input-group-text bg-light text-muted border-end-0">
+                <i class="bi bi-envelope"></i>
+              </span>
+              <input 
+                type="email" 
+                class="form-control bg-light text-muted border-start-0 border-end-0 shadow-none" 
+                id="email" 
+                value="{{ user.email }}" 
+                readonly 
+                tabindex="-1"
+                style="cursor: not-allowed;" 
+                aria-describedby="emailHelp">
+              <span class="input-group-text bg-light text-muted border-start-0" data-bs-toggle="tooltip" data-bs-placement="top" title="Email address cannot be modified. Contact support if you need help.">
+                <i class="bi bi-info-circle"></i>
+              </span>
+            </div>
+            <div id="emailHelp" class="form-text text-muted small mt-1 d-flex align-items-center gap-1">
+              <i class="bi bi-shield-lock text-secondary"></i>
+              Email is tied to your primary authentication login and cannot be edited.
+            </div>
+          </div>
+
+          <!-- Full Name Field -->
+          <div class="mb-4">
+            <label for="full_name" class="form-label fw-semibold text-dark">Full Name <span class="text-danger">*</span></label>
+            <div class="input-group">
+              <span class="input-group-text bg-white text-muted"><i class="bi bi-person"></i></span>
+              <input 
+                type="text" 
+                class="form-control" 
+                id="full_name" 
+                name="full_name" 
+                value="{{ user.full_name }}" 
+                placeholder="e.g. Jane Doe" 
+                required 
+                minlength="2">
+              <div class="invalid-feedback">Please enter a valid full name (at least 2 characters).</div>
+            </div>
+          </div>
+
+          <div class="row">
+            <!-- +60 Prefix Phone Field -->
+            <div class="col-md-6 mb-4">
+              <label for="phone_body" class="form-label fw-semibold text-dark">Phone Number <span class="text-danger">*</span></label>
+              <div class="input-group has-validation">
+                <span class="input-group-text bg-light fw-bold text-dark border-end-0">
+                  <i class="bi bi-telephone me-1 text-muted"></i> +60
+                </span>
+                
+                <!-- Visible input for user digits only -->
+                <input 
+                  type="tel" 
+                  class="form-control border-start-0" 
+                  id="phone_body" 
+                  placeholder="123456789" 
+                  maxlength="10"
+                  required>
+                
+                <!-- Hidden input submitted to Flask / Supabase -->
+                <input type="hidden" id="phone_number" name="phone_number" value="{{ user.phone_number }}">
+
+                <div class="invalid-feedback" id="phoneError">
+                  Please enter a valid 9 or 10-digit number.
+                </div>
+              </div>
+              <div class="form-text text-muted small mt-1">
+                Enter 9 or 10 digits excluding leading '0' (e.g. 12 345 6789).
+              </div>
+            </div>
+
+            <!-- Date of Birth / Calendar Field -->
+            <div class="col-md-6 mb-4">
+              <label for="date_of_birth" class="form-label fw-semibold text-dark">Date of Birth</label>
+              <div class="input-group">
+                <span class="input-group-text bg-white text-muted"><i class="bi bi-calendar-event"></i></span>
+                <input 
+                  type="date" 
+                  class="form-control" 
+                  id="date_of_birth" 
+                  name="date_of_birth" 
+                  value="{{ user.date_of_birth }}" 
+                  max="{{ today_date if today_date else '' }}">
+              </div>
+              {% if user.age %}
+                <div class="form-text text-muted small mt-1">
+                  <i class="bi bi-person-badge me-1"></i>Calculated Age: <strong>{{ user.age }} years old</strong>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Profile Picture Upload -->
+          <div class="mb-4">
+            <label for="profile_picture" class="form-label fw-semibold text-dark">Profile Picture</label>
+            <input 
+              type="file" 
+              class="form-control" 
+              id="profile_picture" 
+              name="profile_picture" 
+              accept="image/png, image/jpeg, image/jpg, image/webp"
+              onchange="previewImage(event)">
+            <div class="form-text text-muted small mt-1">
+              Supported formats: JPG, PNG, WEBP (Max size: 2MB)
+            </div>
+          </div>
+
+          <!-- Action Button -->
+          <div class="d-flex justify-content-end mt-4 pt-2">
+            <button type="button" id="btnSubmitForm" class="btn btn-primary px-4 py-2 rounded-3 shadow-sm d-inline-flex align-items-center gap-2">
+              <i class="bi bi-check-lg"></i> Save Changes
+            </button>
+          </div>
+
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- JavaScript Logic -->
+<script>
+  function previewImage(event) {
+    const input = event.target;
+    if (input.files && input.files[0]) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        document.getElementById('avatarPreview').src = e.target.result;
+      };
+      reader.readAsDataURL(input.files[0]);
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    // Tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
+    const phoneBody = document.getElementById('phone_body');
+    const phoneHidden = document.getElementById('phone_number');
+    const fullNameInput = document.getElementById('full_name');
+    const form = document.getElementById('profileForm');
+    const successAlert = document.getElementById('successAlert');
+
+    // Pre-fill phone body from existing DB value (+60...)
+    let initialVal = phoneHidden.value || '';
+    if (initialVal.startsWith('+60')) {
+      phoneBody.value = initialVal.substring(3);
+    } else if (initialVal.startsWith('60')) {
+      phoneBody.value = initialVal.substring(2);
+    } else if (initialVal.startsWith('0')) {
+      phoneBody.value = initialVal.substring(1);
+    } else {
+      phoneBody.value = initialVal;
+    }
+
+    // Phone validation function (No tick mark)
+    function validatePhone() {
+      let digits = phoneBody.value.replace(/\D/g, '');
+
+      // Remove leading 0 if typed
+      if (digits.startsWith('0')) {
+        digits = digits.substring(1);
+      }
+      phoneBody.value = digits;
+
+      // Check strictly for 9 or 10 digits
+      if (digits.length === 9 || digits.length === 10) {
+        phoneBody.classList.remove('is-invalid');
+        phoneHidden.value = '+60' + digits;
+        return true;
+      } else {
+        phoneBody.classList.add('is-invalid');
+        phoneHidden.value = '';
+        return false;
+      }
+    }
+
+    // Format phone digits silently while typing
+    phoneBody.addEventListener('input', function() {
+      let digits = phoneBody.value.replace(/\D/g, '');
+      if (digits.startsWith('0')) digits = digits.substring(1);
+      phoneBody.value = digits;
+      if (digits.length === 9 || digits.length === 10) {
+        phoneBody.classList.remove('is-invalid');
+      }
+    });
+
+    // Handle Save Click
+    document.getElementById('btnSubmitForm').addEventListener('click', function () {
+      const isPhoneValid = validatePhone();
+      const isNameValid = fullNameInput.checkValidity();
+
+      if (!isNameValid || !isPhoneValid) {
+        form.classList.add('was-validated');
+        successAlert.classList.add('d-none'); // ensure alert is hidden on error
+        
+        if (!isNameValid) fullNameInput.focus();
+        else if (!isPhoneValid) phoneBody.focus();
+        return;
+      }
+
+      // If all valid: Show success message briefly, then submit form
+      successAlert.classList.remove('d-none');
+      
+      setTimeout(function() {
+        form.submit();
+      }, 600); // 600ms pause so the user sees the success feedback
+    });
+  });
+</script>
+{% endblock %}
