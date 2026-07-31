@@ -127,6 +127,25 @@ def get_counselor_dashboard_appointments(therapist_id):
     }
 
 
+def update_appointment_status(appointment_id, new_status):
+    """
+    Updates the status of an existing appointment (e.g., 'Completed', 'Absent').
+    """
+    try:
+        response = (
+            supabase.table("appointment")
+            .update({"status": new_status})
+            .eq("id", appointment_id)
+            .execute()
+        )
+
+        # Return True if the update successfully modified a row
+        return bool(response.data)
+    except Exception as e:
+        print(f"Error updating appointment status in Supabase: {e}")
+        return False
+
+
 # COUNSELOR SEARCH
 def search_counselor(keyword):
     """
@@ -350,20 +369,37 @@ def remove_counselor_availability(rule_id):
 
 
 # APPOINTMENT CREATION & CANCELLATION
-def create_appointment(therapist_id, date_str, slot, appointment_type):
-    user_id = 13
+def create_appointment(therapist_id, date_str, slot, appointment_type, user_id=None):
+    if user_id is None:
+        user_id = 155
 
     try:
         raw_datetime = f"{date_str} {slot.upper()}"
         parsed_dt = datetime.strptime(raw_datetime, "%Y-%m-%d %I.%M %p")
         db_date_time = parsed_dt.strftime("%Y-%m-%d %H:%M:%S")
+
     except Exception as e:
         print(f"Error converting date format: {e}")
         return None
 
-    # UPGRADED: Check if the slot is taken by ANYONE
+    # Validation 1: therapist must exist
+    if therapist_id is None:
+        print("Invalid therapist.")
+        return None
+
+    # Validation 2: cannot book past date/time
+    if parsed_dt < datetime.now():
+        print("Cannot book an appointment in the past.")
+        return None
+
+    # Validation 3: user already has an appointment at this time
+    if check_user_slot_taken(user_id, db_date_time):
+        print("You already have an appointment at this time.")
+        return None
+
+    # Validation 4: counselor already booked
     if check_slot_taken(therapist_id, db_date_time):
-        print("Slot is already booked by someone else. Aborting.")
+        print("Slot is already booked.")
         return None
 
     try:
@@ -383,10 +419,28 @@ def create_appointment(therapist_id, date_str, slot, appointment_type):
 
         if response.data:
             return response.data[0]
+
         return None
+
     except Exception as e:
         print(f"Error creating appointment in Supabase: {e}")
         return None
+
+
+def check_user_slot_taken(user_id, date_time):
+    response = (
+        supabase.table("appointment")
+        .select("*")
+        .eq("user_id", user_id)
+        .eq("date_time", date_time)
+        .neq("status", "Cancelled")
+        .execute()
+    )
+
+    print("Searching:", user_id, date_time)
+    print("Found:", response.data)
+
+    return len(response.data) > 0
 
 
 def cancel_appointment(appointment_id, reason):
@@ -410,4 +464,39 @@ def cancel_appointment(appointment_id, reason):
 
     except Exception as e:
         print(f"Error cancelling appointment in Supabase: {e}")
+        return False
+
+
+def reschedule_appointment(appointment_id, therapist_id, date_str, slot):
+    """
+    Updates an existing appointment to a new date and time,
+    ensuring the new slot is not already taken.
+    """
+    try:
+        # 1. Format the new date and time exactly like we do in create_appointment
+        raw_datetime = f"{date_str} {slot.upper()}"
+        parsed_dt = datetime.strptime(raw_datetime, "%Y-%m-%d %I.%M %p")
+        db_date_time = parsed_dt.strftime("%Y-%m-%d %H:%M:%S")
+    except Exception as e:
+        print(f"Error converting date format: {e}")
+        return False
+
+    # 2. Check if the new slot is taken by ANYONE
+    if check_slot_taken(therapist_id, db_date_time):
+        print("Slot is already booked by someone else. Aborting reschedule.")
+        return False
+
+    # 3. Update the existing record in Supabase
+    try:
+        response = (
+            supabase.table("appointment")
+            .update({"date_time": db_date_time})
+            .eq("id", appointment_id)
+            .execute()
+        )
+
+        # Return True if the update actually modified a row
+        return bool(response.data)
+    except Exception as e:
+        print(f"Error rescheduling appointment in Supabase: {e}")
         return False

@@ -12,7 +12,7 @@
 <div class="container-fluid px-4 py-4" style="max-width: 1200px; margin: auto;">
     
     <div class="mb-4">
-        <h4 class="fw-bold mb-0">Good Afternoon, Jt 👋</h4>
+        <h4 class="fw-bold mb-0">Good Afternoon, CJT 👋</h4>
         <p class="text-muted">Manage your therapy sessions</p>
     </div>
 
@@ -71,16 +71,16 @@
                             📅 {{ apt.date_time[:10] }} at {{ apt.date_time[11:16] }}
                         </small>
                         <small class="d-block text-muted">
-                            {% if apt.appointment_type == 'Phone Call' %}
+                            {% if apt.appointment_type == 'Phone call' %}
                                 📞 Phone Call
                             {% else %}
-                                👥 In-Person Session
+                                👥 In-Person
                             {% endif %}
                         </small>
                     </div>
                     
                     <div class="d-flex gap-2">
-                        <button class="btn btn-sm rounded-pill fw-bold" style="background-color: var(--color-mint); color: #333;">Reschedule</button>
+                        <a href="/reschedule/{{ apt.id }}" class="btn btn-primary rounded-pill py-2 fw-bold shadow-sm">Reschedule</a>
                         <button type="button" class="btn btn-sm btn-outline-danger rounded-pill fw-bold" onclick="prepareCancelModal('{{ apt.id }}')">Cancel</button>
                     </div>
                 </div>
@@ -138,6 +138,16 @@
         </div>
     </div>
 </div>
+
+<script>
+function prepareRescheduleModal(appointmentId, therapistId) {
+    // 1. Point the form's action URL to the correct Flask POST route
+    document.getElementById('rescheduleForm').action = '/reschedule/' + appointmentId;
+    
+    // 2. Inject the therapist ID so the backend can check for double-bookings
+    document.getElementById('rescheduleTherapistId').value = therapistId;
+}
+</script>
 
 <script>
     function prepareCancelModal(id) {

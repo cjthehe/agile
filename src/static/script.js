@@ -21,10 +21,11 @@ function updateAuthButtons() {
 document.addEventListener("DOMContentLoaded", () => {
     updateAuthButtons();
 
+    const logoutButton = document.getElementById('logoutButton');
     if (logoutButton) {
         logoutButton.addEventListener("click", async (event) => {
             event.preventDefault();
-            await logoutUser();
+            await logout(event);
         });
     }
 });
