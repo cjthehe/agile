@@ -140,7 +140,11 @@ class EducationalResourceStore:
                     if resource.id is None:
                         payload.pop("id", None)
                         response = supabase.table("resources").insert(payload).execute()
-                        if response.data and isinstance(response.data, list) and len(response.data) > 0:
+                        if (
+                            response.data
+                            and isinstance(response.data, list)
+                            and len(response.data) > 0
+                        ):
                             first_item = response.data[0]
                             if isinstance(first_item, dict) and "id" in first_item:
                                 resource.id = int(first_item["id"])
