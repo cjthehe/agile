@@ -18,7 +18,6 @@ except (ImportError, ValueError, RuntimeError):
 
 auth = Blueprint("auth", __name__)
 
-# Fallback simulation dictionary containing explicit internal IDs
 fallback_patients = {
     "patient@example.com": {
         "id": "fallback-user-doe-123",
@@ -30,7 +29,6 @@ fallback_patients = {
     }
 }
 
-# Explicit type annotation added to resolve the var-annotated mypy error
 fallback_sessions: dict[str, str] = {}
 
 
@@ -62,20 +60,17 @@ def login():
     if not email or not password:
         return jsonify({"message": "Email and password are required"}), 400
 
-    email_valid = "@" in email and "." in email
-    if not email_valid:
+    if "@" not in email or "." not in email:
         return jsonify({"message": "Invalid email"}), 401
 
     user = None
 
-    # 1. Attempt dynamic authentic login via Supabase
+    # Login using Supabase
     if supabase is not None:
         try:
             response = (
                 supabase.table("user")
-                .select(
-                    "id, email, password, username, user_role, is_verified"
-                )  # Explicitly pulling the dynamic DB "id"
+                .select("id, email, password, username, user_role, is_verified")
                 .eq("email", email)
                 .execute()
             )
@@ -83,23 +78,24 @@ def login():
                 user = response.data[0]
         except Exception as e:
             print(f"Error fetching user from database: {e}")
-            user = None
 
-    # 2. Fall back to local verification if Supabase is offline or row isn't found
+    # Fallback login
     if user is None:
-        # Import fallback counselors lazily to avoid circular dependencies.
         try:
             from admin import fallback_counselors
         except Exception:
             fallback_counselors = {}
 
         local_user = fallback_patients.get(email) or fallback_counselors.get(email)
+
         if local_user is None:
             return jsonify({"message": "Invalid email or password"}), 401
 
         stored_password = local_user["password"]
+
         if not (check_password_hash(stored_password, password) or stored_password == password):
             return jsonify({"message": "Invalid email or password"}), 401
+
         if local_user.get("is_verified") is False:
             return jsonify({"message": "Email not verified"}), 403
 
@@ -112,15 +108,23 @@ def login():
             "user_role": local_user.get("user_role", "patient"),
             "profile_picture": local_user.get("profile_picture", ""),
         }
+
     else:
         stored_password = user.get("password")
+
+        if not stored_password:
+            return jsonify({"message": "Invalid email or password"}), 401
+
         if not (check_password_hash(stored_password, password) or stored_password == password):
             return jsonify({"message": "Invalid email or password"}), 401
+
+        # Corrected from user.get("get", ...)
         if not user.get("is_verified"):
             return jsonify({"message": "Email not verified"}), 403
+
         user["user_role"] = user.get("user_role") or "patient"
 
-    # --- Fetch Profile Metadata (profile_picture, full_name) for Session Sync ---
+    # Get profile information
     profile_picture = ""
     full_name = user.get("name", "")
 
@@ -132,17 +136,20 @@ def login():
                 .eq("user_id", user["id"])
                 .execute()
             )
+
             if profile_res.data:
-                p_data = profile_res.data[0]
-                profile_picture = p_data.get("profile_picture", "")
-                if p_data.get("full_name"):
-                    full_name = p_data.get("full_name")
+                profile_data = profile_res.data[0]
+                profile_picture = profile_data.get("profile_picture", "")
+
+                if profile_data.get("full_name"):
+                    full_name = profile_data["full_name"]
+
         except Exception as e:
             print(f"Error fetching profile metadata on login: {e}")
     else:
         profile_picture = user.get("profile_picture", "")
 
-    # Establish session state
+    # Create session
     session_id = str(uuid4())
     fallback_sessions[session_id] = email
 
@@ -179,25 +186,13 @@ def logout():
     if not session_id:
         return jsonify({"message": "Session ID required"}), 400
 
-    is_active_session = session.get("session_id") == session_id or session_id in fallback_sessions
-    if not is_active_session:
+    if session.get("session_id") != session_id and session_id not in fallback_sessions:
         return jsonify({"message": "Session not found"}), 404
 
-    # Clear user session keys completely
-    session.pop("user_id", None)
-    session.pop("session_id", None)
-    session.pop("email", None)
-    session.pop("full_name", None)
-    session.pop("profile_picture", None)
+    session.clear()
+    fallback_sessions.pop(session_id, None)
 
-    if session_id in fallback_sessions:
-        del fallback_sessions[session_id]
-
-    return jsonify(
-        {
-            "message": "Logout successful",
-        }
-    )
+    return jsonify({"message": "Logout successful"})
 
 
 @auth.route("/reset")
@@ -207,36 +202,31 @@ def reset_page():
 
 @auth.route("/api/request-reset", methods=["POST"])
 def request_reset():
-    data = request.get_json()
+    data = request.get_json() or {}
     email = data.get("email")
 
     if not email:
         return jsonify({"message": "Email is required"}), 400
 
-    # --- 1. Email Format Validation ---
-    # This regex checks for standard format: text + @ + text + . + text
-    email_regex = r"^[\w\.-]+@[\w\.-]+\.\w+$"
-    if not re.match(email_regex, email):
+    if not re.match(r"^[\w\.-]+@[\w\.-]+\.\w+$", email):
         return (
             jsonify({"message": "Invalid email format. Please include an '@' and a valid domain."}),
             400,
         )
 
-    # Generate a secure 6-digit code
+    if supabase is None:
+        return jsonify({"message": "Database connection is unavailable."}), 500
+
     reset_code = str(secrets.randbelow(1000000)).zfill(6)
 
     try:
-        # --- 2. Check if the user exists in Supabase ---
         res = supabase.table("user").select("id").eq("email", email).execute()
 
-        # If the list is empty, the user does not exist
         if not res.data:
             return jsonify({"message": "Email address not found in our system."}), 404
 
-        # If they do exist, save the code to the database
         supabase.table("user").update({"reset_code": reset_code}).eq("email", email).execute()
 
-        # Send the email
         try:
             from register import send_verification_email
 
@@ -244,7 +234,6 @@ def request_reset():
         except Exception:
             print(f"--- SIMULATED EMAIL --- Reset code for {email}: {reset_code}")
 
-        # Return a clear success message
         return jsonify({"message": "Reset code sent successfully to your email."}), 200
 
     except Exception as e:
@@ -254,7 +243,8 @@ def request_reset():
 
 @auth.route("/api/reset-password", methods=["POST"])
 def reset_password():
-    data = request.get_json()
+    data = request.get_json() or {}
+
     email = data.get("email")
     code = data.get("code")
     new_password = data.get("new_password")
@@ -262,41 +252,46 @@ def reset_password():
     if not all([email, code, new_password]):
         return jsonify({"message": "All fields are required."}), 400
 
-    # --- 1. Password Complexity Validation ---
     if len(new_password) < 8:
         return jsonify({"message": "Password must be at least 8 characters long."}), 400
+
     if not re.search(r"[A-Z]", new_password):
         return jsonify({"message": "Password must contain at least one uppercase letter."}), 400
+
     if not re.search(r"[a-z]", new_password):
         return jsonify({"message": "Password must contain at least one lowercase letter."}), 400
+
     if not re.search(r"\d", new_password):
         return jsonify({"message": "Password must contain at least one number."}), 400
+
     if not re.search(r"[^A-Za-z0-9]", new_password):
         return jsonify({"message": "Password must contain at least one special character."}), 400
 
+    if supabase is None:
+        return jsonify({"message": "Database connection is unavailable."}), 500
+
     try:
-        # Fetch the code AND the current password from the database
         res = supabase.table("user").select("id, reset_code, password").eq("email", email).execute()
 
-        # Verify the reset code
         if not res.data or res.data[0].get("reset_code") != code:
             return jsonify({"message": "Invalid or expired reset code."}), 400
 
-        # --- 2. Check Against Old Password ---
-        current_hashed_password = res.data[0].get("password")
-        if current_hashed_password and check_password_hash(current_hashed_password, new_password):
+        old_password = res.data[0].get("password")
+
+        if old_password and check_password_hash(old_password, new_password):
             return (
                 jsonify({"message": "Your new password cannot be the same as your old password."}),
                 400,
             )
 
-        # Hash the new password securely
-        hashed_pw = generate_password_hash(new_password)
+        hashed_password = generate_password_hash(new_password)
 
-        # Update the database and wipe the reset_code so it can't be used again
-        supabase.table("user").update({"password": hashed_pw, "reset_code": None}).eq(
-            "email", email
-        ).execute()
+        (
+            supabase.table("user")
+            .update({"password": hashed_password, "reset_code": None})
+            .eq("email", email)
+            .execute()
+        )
 
         return jsonify({"message": "Password reset successfully! You can now log in."}), 200
 

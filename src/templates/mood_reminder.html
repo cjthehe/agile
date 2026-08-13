@@ -1,0 +1,438 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+    :root {
+        --reminder-card: #FFFFFF;
+        --reminder-text: #0F172A;
+        --reminder-muted: #64748B;
+        --reminder-border: #E2E8F0;
+        --reminder-soft: #F8FAFC;
+        --reminder-primary: var(--color-matcha, #10B981);
+        --reminder-radius-lg: 16px;
+        --reminder-radius-md: 12px;
+        --reminder-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+    }
+
+    .reminder-wrapper {
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        color: var(--reminder-text);
+        margin-bottom: 50px;
+    }
+
+    .reminder-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 18px;
+        padding-bottom: 24px;
+        margin-bottom: 28px;
+        border-bottom: 1px solid var(--reminder-border);
+    }
+
+    .reminder-header h1 {
+        margin: 0 0 6px;
+        font-size: 2.15rem;
+        font-weight: 800;
+        letter-spacing: -0.025em;
+    }
+
+    .reminder-header p {
+        margin: 0;
+        color: var(--reminder-muted);
+    }
+
+    .reminder-back-btn,
+    .reminder-secondary-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 14px 28px;
+        min-height: 52px;
+        border: 1px solid var(--color-lavender, #B8B3D8);
+        border-radius: 8px;
+        text-decoration: none;
+        color: var(--reminder-text);
+        font-size: 0.95rem;
+        font-weight: 600;
+        font-family: inherit;
+        background: transparent;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+
+    .reminder-back-btn:hover,
+    .reminder-secondary-btn:hover {
+        background-color: var(--color-lilac, #F1F5F9);
+        color: #444444;
+        border-color: var(--color-lavender, #B8B3D8);
+        transform: translateY(-1px);
+    }
+
+    .reminder-card {
+        max-width: 760px;
+        margin: 0 auto;
+        background: var(--reminder-card);
+        border: 1px solid var(--reminder-border);
+        border-radius: var(--reminder-radius-lg);
+        box-shadow: var(--reminder-shadow);
+        overflow: hidden;
+    }
+
+    .card-heading {
+        padding: 28px 30px 20px;
+        border-bottom: 1px solid var(--reminder-border);
+    }
+
+    .card-heading h2 {
+        margin: 0 0 6px;
+        font-size: 1.3rem;
+        font-weight: 800;
+    }
+
+    .card-heading p {
+        margin: 0;
+        color: var(--reminder-muted);
+        font-size: 0.94rem;
+    }
+
+    .reminder-form {
+        padding: 30px;
+        display: flex;
+        flex-direction: column;
+        gap: 28px;
+    }
+
+    .setting-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 24px;
+        padding-bottom: 24px;
+        border-bottom: 1px solid var(--reminder-border);
+    }
+
+    .setting-copy h3 {
+        margin: 0 0 5px;
+        font-size: 1rem;
+        font-weight: 700;
+    }
+
+    .setting-copy p {
+        margin: 0;
+        color: var(--reminder-muted);
+        font-size: 0.9rem;
+        max-width: 480px;
+    }
+
+    .switch {
+        position: relative;
+        display: inline-block;
+        width: 54px;
+        height: 29px;
+        flex-shrink: 0;
+    }
+
+    .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .slider {
+        position: absolute;
+        inset: 0;
+        cursor: pointer;
+        background: #CBD5E1;
+        transition: .25s;
+        border-radius: 999px;
+    }
+
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 23px;
+        width: 23px;
+        left: 3px;
+        bottom: 3px;
+        background: #FFFFFF;
+        transition: .25s;
+        border-radius: 50%;
+    }
+
+    .switch input:checked + .slider {
+        background: var(--reminder-primary);
+    }
+
+    .switch input:checked + .slider:before {
+        transform: translateX(25px);
+    }
+
+    .time-setting {
+        display: grid;
+        grid-template-columns: 1fr 210px;
+        align-items: center;
+        gap: 24px;
+    }
+
+    .time-input {
+        width: 100%;
+        min-height: 48px;
+        padding: 10px 14px;
+        border: 1px solid var(--reminder-border);
+        border-radius: 9px;
+        background: #FFFFFF;
+        color: var(--reminder-text);
+        font-family: inherit;
+        font-size: 1rem;
+        box-sizing: border-box;
+        transition: all .15s ease;
+    }
+
+    .time-input:focus {
+        outline: none;
+        border-color: var(--reminder-primary);
+        box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.10);
+    }
+
+    .time-input.reminder-off {
+        background: #F8FAFC;
+        color: #94A3B8;
+    }
+
+    .permission-card {
+        padding: 18px 20px;
+        background: var(--reminder-soft);
+        border: 1px solid var(--reminder-border);
+        border-radius: var(--reminder-radius-md);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+    }
+
+    .permission-status {
+        font-size: 0.88rem;
+        color: var(--reminder-muted);
+        margin-top: 4px;
+    }
+
+    .form-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .save-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 52px;
+        padding: 12px 26px;
+        border: 1px solid var(--reminder-primary);
+        border-radius: 9px;
+        background: var(--reminder-primary);
+        color: #FFFFFF;
+        font-family: inherit;
+        font-weight: 700;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+
+    .save-btn:hover {
+        transform: translateY(-1px);
+        filter: brightness(0.94);
+    }
+
+    .notice-success,
+    .notice-error {
+        max-width: 760px;
+        margin: 0 auto 22px;
+        padding: 16px 20px;
+        border-radius: 10px;
+        font-weight: 600;
+    }
+
+    .notice-success {
+        background: #ECFDF5;
+        color: #065F46;
+        border: 1px solid #A7F3D0;
+    }
+
+    .notice-error {
+        background: #FEF2F2;
+        color: #991B1B;
+        border: 1px solid #FCA5A5;
+    }
+
+    .help-note {
+        margin: 0;
+        color: var(--reminder-muted);
+        font-size: 0.83rem;
+        line-height: 1.55;
+    }
+
+    @media (max-width: 680px) {
+        .reminder-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .reminder-back-btn {
+            width: 100%;
+        }
+
+        .setting-row,
+        .permission-card {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .time-setting {
+            grid-template-columns: 1fr;
+        }
+
+        .form-actions {
+            flex-direction: column;
+        }
+
+        .form-actions button {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="reminder-wrapper">
+    <header class="reminder-header">
+        <div>
+            <h1>Daily Mood Reminder</h1>
+            <p>
+                Choose when you would like to receive an email reminder
+                to record your daily mood.
+            </p>
+        </div>
+
+        <a class="reminder-back-btn"
+           href="{{ url_for('wellbeing.mood_page') }}">
+            Back to Daily Mood Entry
+        </a>
+    </header>
+
+    <!-- Success Message -->
+    {% if request.args.get('saved') == 'true' %}
+    <div class="notice-success">
+        ✓ Your daily mood reminder preferences have been saved.
+    </div>
+    {% endif %}
+
+    <!-- Error Message -->
+    {% with messages = get_flashed_messages(category_filter=['error']) %}
+        {% if messages %}
+            {% for message in messages %}
+            <div class="notice-error">
+                {{ message }}
+            </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <section class="reminder-card">
+
+        <div class="card-heading">
+            <h2>Reminder Settings</h2>
+            <p>
+                An email reminder will be sent at your selected time
+                if you have not recorded your mood for that day.
+            </p>
+        </div>
+
+        <form class="reminder-form"
+              method="POST"
+              action="{{ url_for('wellbeing.mood_reminder_settings') }}"
+              id="reminderForm">
+
+            <!-- Enable / Disable Reminder -->
+            <div class="setting-row">
+
+                <div class="setting-copy">
+                    <h3>Enable Daily Reminder</h3>
+
+                    <p>
+                        Turn this on to receive one email reminder
+                        each day at your preferred time.
+                    </p>
+                </div>
+
+                <label class="switch"
+                       aria-label="Enable daily mood reminder">
+
+                    <input type="checkbox"
+                           id="reminderEnabled"
+                           name="reminder_enabled"
+                           {% if settings.enabled %}checked{% endif %}>
+
+                    <span class="slider"></span>
+                </label>
+
+            </div>
+
+            <!-- Reminder Time -->
+            <div class="time-setting">
+
+                <div class="setting-copy">
+                    <h3>Reminder Time</h3>
+
+                    <p>
+                        Select the time you would like to receive
+                        your daily mood reminder email.
+                    </p>
+                </div>
+
+                <input class="time-input"
+                       type="time"
+                       id="reminderTime"
+                       name="reminder_time"
+                       value="{{ settings.time }}"
+                       required>
+
+            </div>
+
+            <!-- Timezone -->
+            <input type="hidden"
+                   id="reminderTimezone"
+                   name="reminder_timezone"
+                   value="{{ settings.timezone }}">
+
+            <!-- Save Button -->
+            <div class="form-actions">
+                <button type="submit"
+                        class="save-btn">
+                    Save Reminder Preferences
+                </button>
+            </div>
+
+        </form>
+    </section>
+</div>
+
+<script>
+    const timezoneInput = document.getElementById('reminderTimezone');
+
+    try {
+        const timezone =
+            Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+        if (timezone) {
+            timezoneInput.value = timezone;
+        }
+    } catch (error) {
+        console.log('Unable to detect timezone.');
+    }
+</script>
+
+{% endblock %}
