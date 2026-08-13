@@ -9,161 +9,199 @@
 
     <div class="row justify-content-center g-4">
 
-    <!-- Counselor Management Card -->
-    <div class="col-lg-5">
-        <div class="card h-100 shadow-sm border-0 p-4 text-center"
-             style="border-top: 4px solid #80CBC4;">
-            <div class="card-body">
+        <!-- Counselor Management Card -->
+        <div class="col-lg-5">
+            <div class="card h-100 shadow-sm border-0 p-4 text-center"
+                 style="border-top: 4px solid #80CBC4;">
+                <div class="card-body">
 
-                <div class="rounded-circle d-inline-flex justify-content-center align-items-center mb-3"
-                     style="width:70px;height:70px;font-size:2rem;background:#FFDBDF;color:#B84C68;">
-                    🛡️
-                </div>
-
-                <h4 class="fw-bold mb-3">Counselor Management</h4>
-
-                <p class="text-muted mb-4">
-                    Create counselor accounts, assign roles, and invite
-                    authorized counselors to access the system securely.
-                </p>
-
-                <button class="btn rounded-pill py-2 px-4"
-                        style="background:#80CBC4;color:white;"
-                        onclick="toggleCreateCounselorForm(true)">
-                    Create Counselor Account
-                </button>
-
-                <hr>
-
-                <ul class="list-group list-group-flush text-start">
-                    <li class="list-group-item border-0 px-0">
-                        ✔ Secure counselor account creation
-                    </li>
-                    <li class="list-group-item border-0 px-0">
-                        ✔ Role assignment
-                    </li>
-                    <li class="list-group-item border-0 px-0">
-                        ✔ Email invitation & activation
-                    </li>
-                </ul>
-
-            </div>
-        </div>
-    </div>
-
-
-    <!-- Educational Resources Card -->
-    <div class="col-lg-5">
-        <div class="card h-100 shadow-sm border-0 p-4 text-center"
-             style="border-top: 4px solid #F791A9;">
-
-            <div class="card-body">
-
-                <div class="rounded-circle d-inline-flex justify-content-center align-items-center mb-3"
-                     style="width:70px;height:70px;font-size:2rem;background:#DDF7F4;color:#2C7A73;">
-                    📚
-                </div>
-
-                <h4 class="fw-bold mb-3">Educational Resources</h4>
-
-                <p class="text-muted mb-4">
-                    Manage mental health educational resources including
-                    articles, videos, and self-help guides available to patients.
-                </p>
-
-                <a href="{{ url_for('admin.admin_resources_page') }}"
-                   class="btn rounded-pill py-2 px-4 fw-semibold"
-                   style="background:#F791A9;color:white;">
-                    Manage Educational Resources
-                </a>
-
-                <hr>
-
-                <ul class="list-group list-group-flush text-start">
-                    <li class="list-group-item border-0 px-0">
-                        ✔ Upload new resources
-                    </li>
-                    <li class="list-group-item border-0 px-0">
-                        ✔ Edit or delete resources
-                    </li>
-                    <li class="list-group-item border-0 px-0">
-                        ✔ Organize categories and tags
-                    </li>
-                </ul>
-
-            </div>
-        </div>
-    </div>
-
-
-    <!-- Create Counselor Form -->
-    <div class="col-lg-10">
-        <div id="counselorFormCard"
-            class="card shadow-sm border-0 p-4 d-none"
-            style="border-top: 4px solid #80CBC4;">
-
-            <div class="card-body">
-
-                <div class="d-flex justify-content-between align-items-start mb-4">
-
-                    <div>
-                        <h4 class="fw-bold">Create Counselor Account</h4>
-                        <p class="text-muted mb-0">
-                            Fill in the details below to create a new counselor account.
-                        </p>
+                    <div class="rounded-circle d-inline-flex justify-content-center align-items-center mb-3"
+                         style="width:70px;height:70px;font-size:2rem;background:#FFDBDF;color:#B84C68;">
+                        🛡️
                     </div>
 
-                    <button class="btn btn-outline-secondary btn-sm"
-                            onclick="toggleCreateCounselorForm(false)">
-                        Close
+                    <h4 class="fw-bold mb-3">Counselor Management</h4>
+
+                    <p class="text-muted mb-4">
+                        Create counselor accounts, assign roles, and invite
+                        authorized counselors to access the system securely.
+                    </p>
+
+                    <button class="btn rounded-pill py-2 px-4"
+                            style="background:#80CBC4;color:white;"
+                            onclick="toggleCreateCounselorForm(true)">
+                        Create Counselor Account
                     </button>
 
+                    <hr>
+
+                    <ul class="list-group list-group-flush text-start">
+                        <li class="list-group-item border-0 px-0">
+                            ✔ Secure counselor account creation
+                        </li>
+                        <li class="list-group-item border-0 px-0">
+                            ✔ Role assignment
+                        </li>
+                        <li class="list-group-item border-0 px-0">
+                            ✔ Email invitation & activation
+                        </li>
+                    </ul>
+
                 </div>
-
-
-                <div class="mb-3">
-                    <label class="form-label">Name</label>
-                    <input type="text"
-                           id="name"
-                           class="form-control"
-                           placeholder="Counselor name"
-                           required>
-                </div>
-
-
-                <div class="mb-3">
-                    <label class="form-label">Email</label>
-                    <input type="email"
-                           id="email"
-                           class="form-control"
-                           placeholder="Counselor email"
-                           required>
-                </div>
-
-
-                <div class="mb-3">
-                    <label class="form-label">Role</label>
-                    <select id="role" class="form-select">
-                        <option value="counselor">Counselor</option>
-                        <option value="senior_counselor">Senior Counselor</option>
-                    </select>
-                </div>
-
-
-                <!-- Updated Button Color -->
-                <button class="btn btn-counselor w-100 rounded-pill py-2 fw-semibold"
-                        onclick="createCounselor()">
-                    Create Counselor Account
-                </button>
-
-
-                <p id="adminMessage" class="text-center mt-3"></p>
-
             </div>
         </div>
-    </div>
 
-</div>
+
+        <!-- Educational Resources Card -->
+        <div class="col-lg-5">
+            <div class="card h-100 shadow-sm border-0 p-4 text-center"
+                 style="border-top: 4px solid #F791A9;">
+
+                <div class="card-body">
+
+                    <div class="rounded-circle d-inline-flex justify-content-center align-items-center mb-3"
+                         style="width:70px;height:70px;font-size:2rem;background:#DDF7F4;color:#2C7A73;">
+                        📚
+                    </div>
+
+                    <h4 class="fw-bold mb-3">Educational Resources</h4>
+
+                    <p class="text-muted mb-4">
+                        Manage mental health educational resources including
+                        articles, videos, and self-help guides available to patients.
+                    </p>
+
+                    <a href="{{ url_for('admin.admin_resources_page') }}"
+                       class="btn rounded-pill py-2 px-4 fw-semibold"
+                       style="background:#F791A9;color:white;">
+                        Manage Educational Resources
+                    </a>
+
+                    <hr>
+
+                    <ul class="list-group list-group-flush text-start">
+                        <li class="list-group-item border-0 px-0">
+                            ✔ Upload new resources
+                        </li>
+                        <li class="list-group-item border-0 px-0">
+                            ✔ Edit or delete resources
+                        </li>
+                        <li class="list-group-item border-0 px-0">
+                            ✔ Organize categories and tags
+                        </li>
+                    </ul>
+
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Self-Assessment Questionnaire Card -->
+        <div class="col-lg-5">
+            <div class="card h-100 shadow-sm border-0 p-4 text-center"
+                 style="border-top: 4px solid #B39DDB;">
+
+                <div class="card-body">
+
+                    <div class="rounded-circle d-inline-flex justify-content-center align-items-center mb-3"
+                         style="width:70px;height:70px;font-size:2rem;background:#F0E9FA;color:#7655A6;">
+                        📋
+                    </div>
+
+                    <h4 class="fw-bold mb-3">Self-Assessment Questionnaire</h4>
+
+                    <p class="text-muted mb-4">
+                        Manage self-assessment questions and scoring rules used
+                        to evaluate patient mental wellbeing.
+                    </p>
+
+                    <a href="{{ url_for('admin.manage_questionnaire') }}"
+                       class="btn rounded-pill py-2 px-4 fw-semibold"
+                       style="background:#B39DDB;color:white;">
+                        Manage Questionnaire
+                    </a>
+
+                    <hr>
+
+                    <ul class="list-group list-group-flush text-start">
+                        <li class="list-group-item border-0 px-0">
+                            ✔ Add new assessment questions
+                        </li>
+                        <li class="list-group-item border-0 px-0">
+                            ✔ Edit or deactivate questions
+                        </li>
+                        <li class="list-group-item border-0 px-0">
+                            ✔ Update assessment scoring rules
+                        </li>
+                    </ul>
+
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Create Counselor Form -->
+        <div class="col-lg-10">
+            <div id="counselorFormCard"
+                 class="card shadow-sm border-0 p-4 d-none"
+                 style="border-top: 4px solid #80CBC4;">
+
+                <div class="card-body">
+
+                    <div class="d-flex justify-content-between align-items-start mb-4">
+
+                        <div>
+                            <h4 class="fw-bold">Create Counselor Account</h4>
+                            <p class="text-muted mb-0">
+                                Fill in the details below to create a new counselor account.
+                            </p>
+                        </div>
+
+                        <button class="btn btn-outline-secondary btn-sm"
+                                onclick="toggleCreateCounselorForm(false)">
+                            Close
+                        </button>
+
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Name</label>
+                        <input type="text"
+                               id="name"
+                               class="form-control"
+                               placeholder="Counselor name"
+                               required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email"
+                               id="email"
+                               class="form-control"
+                               placeholder="Counselor email"
+                               required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Role</label>
+                        <select id="role" class="form-select">
+                            <option value="counselor">Counselor</option>
+                            <option value="senior_counselor">Senior Counselor</option>
+                        </select>
+                    </div>
+
+                    <button class="btn btn-counselor w-100 rounded-pill py-2 fw-semibold"
+                            onclick="createCounselor()">
+                        Create Counselor Account
+                    </button>
+
+                    <p id="adminMessage" class="text-center mt-3"></p>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
 </div>
 
 
@@ -174,9 +212,9 @@ function toggleCreateCounselorForm(show) {
 
     if (show) {
         formCard.classList.remove('d-none');
-        formCard.scrollIntoView({ 
-            behavior: 'smooth', 
-            block: 'start' 
+        formCard.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
         });
     } else {
         formCard.classList.add('d-none');

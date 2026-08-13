@@ -1,0 +1,346 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<style>
+body {
+    background-color: #faf9f6 !important;
+}
+
+.questionnaire-container {
+    max-width: 1050px;
+    margin: 40px auto 70px;
+    padding: 0 20px;
+}
+
+.page-header,
+.admin-section {
+    background: white;
+    border-radius: 14px;
+    padding: 25px;
+    margin-bottom: 22px;
+    border: 1px solid #E8E4EE;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.05);
+}
+
+.page-header {
+    border-top: 4px solid #B39DDB;
+}
+
+.page-header h1 {
+    color: #2D3748;
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+
+.page-header p,
+.section-description {
+    color: #718096;
+}
+
+.section-title {
+    color: #2D3748;
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+.question-item {
+    background: #FAFAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+}
+
+.question-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.status-badge {
+    padding: 5px 11px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.status-active {
+    background: #DCFCE7;
+    color: #166534;
+}
+
+.status-inactive {
+    background: #E5E7EB;
+    color: #4B5563;
+}
+
+.btn-purple {
+    background: #B39DDB;
+    border-color: #B39DDB;
+    color: white;
+}
+
+.btn-purple:hover {
+    background: #9575CD;
+    border-color: #9575CD;
+    color: white;
+}
+
+.score-preview {
+    background: #F8F5FC;
+    border: 1px solid #E1D8EE;
+    border-radius: 10px;
+    padding: 15px;
+    margin-top: 18px;
+}
+
+.score-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.score-box {
+    flex: 1;
+    min-width: 180px;
+    background: white;
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+    padding: 12px;
+    text-align: center;
+}
+
+.score-box strong {
+    display: block;
+    color: #2D3748;
+}
+
+.score-box span {
+    color: #718096;
+    font-size: 0.85rem;
+}
+
+@media (max-width: 768px) {
+    .page-header-content {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 15px;
+    }
+}
+</style>
+
+<div class="questionnaire-container">
+
+    <!-- Header -->
+    <div class="page-header">
+        <div class="page-header-content d-flex justify-content-between align-items-center">
+            <div>
+                <h1>Manage Self-Assessment Questionnaire</h1>
+                <p class="mb-0">Add, edit, deactivate questions and update assessment scoring rules.</p>
+            </div>
+
+            <a href="{{ url_for('admin.admin_page') }}" class="btn btn-outline-secondary">
+                Back to Admin Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert {% if category == 'success' %}alert-success{% else %}alert-danger{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Scoring Rules -->
+    <div class="admin-section">
+        <div class="section-title">Assessment Scoring Rules</div>
+        <p class="section-description">
+            Update the score ranges used to determine the patient's wellbeing category.
+        </p>
+
+        <form method="POST" action="{{ url_for('admin.update_scoring_rules') }}">
+            <div class="row g-3">
+
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Good - Maximum Score</label>
+                    <input type="number"
+                           name="good_max"
+                           class="form-control"
+                           min="0"
+                           value="{{ scoring.good_max }}"
+                           required>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Moderate - Maximum Score</label>
+                    <input type="number"
+                           name="moderate_max"
+                           class="form-control"
+                           min="1"
+                           value="{{ scoring.moderate_max }}"
+                           required>
+                </div>
+
+            </div>
+
+            <div class="score-preview">
+                <div class="score-row">
+
+                    <div class="score-box">
+                        <strong>Good</strong>
+                        <span>0 - {{ scoring.good_max }}</span>
+                    </div>
+
+                    <div class="score-box">
+                        <strong>Moderate</strong>
+                        <span>{{ scoring.good_max + 1 }} - {{ scoring.moderate_max }}</span>
+                    </div>
+
+                    <div class="score-box">
+                        <strong>Needs Attention</strong>
+                        <span>Above {{ scoring.moderate_max }}</span>
+                    </div>
+
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-purple mt-3">
+                Save Scoring Rules
+            </button>
+        </form>
+    </div>
+
+    <!-- Add New Question -->
+    <div class="admin-section">
+        <div class="section-title">Add New Question</div>
+        <p class="section-description">
+            Add a new question to the patient self-assessment questionnaire.
+        </p>
+
+        <form method="POST" action="{{ url_for('admin.add_question') }}">
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Question Text</label>
+                <textarea name="question_text"
+                          class="form-control"
+                          rows="3"
+                          maxlength="300"
+                          placeholder="Enter the new self-assessment question..."
+                          required></textarea>
+                <div class="form-text">Maximum 300 characters.</div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Display Order</label>
+                <input type="number"
+                       name="display_order"
+                       class="form-control"
+                       min="1"
+                       value="{{ questions|length + 1 }}"
+                       required>
+            </div>
+
+            <button type="submit" class="btn btn-purple">
+                Add Question
+            </button>
+        </form>
+    </div>
+
+    <!-- Existing Questionnaire -->
+    <div class="admin-section">
+        <div class="section-title">Existing Questionnaire</div>
+        <p class="section-description">
+            Edit existing questions or deactivate questions that should no longer appear to patients.
+        </p>
+
+        {% if questions %}
+
+            {% for question in questions %}
+
+                <div class="question-item">
+
+                    <div class="question-top">
+                        <strong>Question {{ loop.index }}</strong>
+
+                        {% if question.is_active %}
+                            <span class="status-badge status-active">Active</span>
+                        {% else %}
+                            <span class="status-badge status-inactive">Inactive</span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Edit Question -->
+                    <form method="POST"
+                          action="{{ url_for('admin.edit_question', question_id=question.id) }}">
+
+                        <div class="mb-3">
+                            <label class="form-label">Question Text</label>
+
+                            <textarea name="question_text"
+                                      class="form-control"
+                                      rows="2"
+                                      maxlength="300"
+                                      required>{{ question.question_text }}</textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Display Order</label>
+
+                            <input type="number"
+                                   name="display_order"
+                                   class="form-control"
+                                   min="1"
+                                   value="{{ question.display_order }}"
+                                   required>
+                        </div>
+
+                        <button type="submit" class="btn btn-purple btn-sm">
+                            Save Changes
+                        </button>
+                    </form>
+
+                    <!-- Activate / Deactivate -->
+                    <form method="POST"
+                          action="{{ url_for('admin.toggle_question', question_id=question.id) }}"
+                          class="mt-2">
+
+                        {% if question.is_active %}
+                            <button type="submit"
+                                    class="btn btn-outline-danger btn-sm"
+                                    onclick="return confirm('Are you sure you want to deactivate this question?');">
+                                Deactivate Question
+                            </button>
+                        {% else %}
+                            <button type="submit" class="btn btn-outline-success btn-sm">
+                                Activate Question
+                            </button>
+                        {% endif %}
+
+                    </form>
+
+                </div>
+
+            {% endfor %}
+
+        {% else %}
+
+            <div class="alert alert-info mb-0">
+                No assessment questions have been created yet.
+            </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+{% endblock %}
