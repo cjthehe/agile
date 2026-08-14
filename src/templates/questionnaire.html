@@ -246,24 +246,28 @@
 
     <main class="wellbeing-card main-form-panel">
         <form method="POST" action="{{ url_for('wellbeing.questionnaire') }}" class="wellbeing-form" id="assessmentForm">
-            {% for i in range(1, 6) %}
-            <div class="question-card">
-                <p class="question-text">
-                    {% if i==1 %}1. How often have you felt calm, peaceful, and relaxed today?{% endif %}
-                    {% if i==2 %}2. Have you been able to manage daily stresses comfortably?{% endif %}
-                    {% if i==3 %}3. How frequently did you feel energetic and motivated to do your tasks?{% endif %}
-                    {% if i==4 %}4. Have you felt supported and connected to friends, family, or peers?{% endif %}
-                    {% if i==5 %}5. How content have you been with your sleep quality and physical rest?{% endif %}
-                </p>
-                <div class="assessment-options-grid">
-                    <button type="button" class="option-btn" data-value="0">Never</button>
-                    <button type="button" class="option-btn" data-value="1">Sometimes</button>
-                    <button type="button" class="option-btn" data-value="2">Often</button>
-                    <button type="button" class="option-btn" data-value="3">Always</button>
+            {% if questions %}
+                {% for question in questions %}
+                <div class="question-card">
+                    <p class="question-text">
+                        {{ loop.index }}. {{ question.question_text }}
+                    </p>
+
+                    <div class="assessment-options-grid">
+                        <button type="button" class="option-btn" data-value="0">Never</button>
+                        <button type="button" class="option-btn" data-value="1">Sometimes</button>
+                        <button type="button" class="option-btn" data-value="2">Often</button>
+                        <button type="button" class="option-btn" data-value="3">Always</button>
+                    </div>
+
+                    <input type="hidden" name="q_{{ question.id }}">
                 </div>
-                <input type="hidden" name="q{{i}}">
-            </div>
-            {% endfor %}
+                {% endfor %}
+            {% else %}
+                <div class="assessment-error" style="display:flex;">
+                    <span>No assessment questions are currently available.</span>
+                </div>
+            {% endif %}
 
             <div class="form-actions">
                 <a class="btn-back-home" href="{{ url_for('wellbeing.wellbeing') }}">Back to Wellbeing Tracking</a>

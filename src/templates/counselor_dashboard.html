@@ -104,36 +104,87 @@
         </div>
 
         <div class="tab-pane fade" id="history" role="tabpanel">
-            {% for apt in completed_appointments %}
-            <div class="card border-0 rounded-4 shadow-sm mb-3" style="border-left: 4px solid var(--color-lavender);">
-                <div class="card-body p-4">
-                    <div class="d-flex align-items-center gap-3 mb-3">
-                        <div class="rounded-circle d-flex align-items-center justify-content-center" 
-                             style="width: 40px; height: 40px; background-color: var(--color-lavender); color: white; font-weight: bold; font-size: 0.9rem;">
-                            {{ apt.user.username[0].upper() if apt.user else 'P' }}
-                        </div>
-                        <div>
-                            <h6 class="fw-bold mb-0" style="color: var(--color-lavender);">{{ apt.user.username if apt.user else 'Unknown' }}</h6>
-                            <small class="text-muted">Patient</small>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <small class="d-block text-muted mb-1">
-                            📅 {{ apt.formatted_date }}
-                        </small>
-                        <small class="d-block text-muted">
-                            ✔ {{ apt.appointment_type }}
-                        </small>
-                    </div>
+    {% for apt in completed_appointments %}
+
+    <div class="card border-0 rounded-4 shadow-sm mb-3"
+         style="border-left: 4px solid var(--color-lavender);">
+
+        <div class="card-body p-4">
+
+            <div class="d-flex align-items-center gap-3 mb-3">
+
+                <div class="rounded-circle d-flex align-items-center justify-content-center"
+                     style="
+                        width: 40px;
+                        height: 40px;
+                        background-color: var(--color-lavender);
+                        color: white;
+                        font-weight: bold;
+                        font-size: 0.9rem;
+                     ">
+
+                    {{ apt.user.username[0].upper() if apt.user else 'P' }}
+
                 </div>
+
+                <div>
+                    <h6 class="fw-bold mb-0"
+                        style="color: var(--color-lavender);">
+
+                        {{ apt.user.username if apt.user else 'Unknown' }}
+
+                    </h6>
+
+                    <small class="text-muted">
+                        Patient
+                    </small>
+                </div>
+
             </div>
-            {% else %}
-            <div class="text-center text-muted py-5">
-                <p>No completed sessions in the last 30 days.</p>
+
+
+            <div class="mb-3">
+
+                <small class="d-block text-muted mb-1">
+                    📅 {{ apt.formatted_date }}
+                </small>
+
+                <small class="d-block text-muted">
+                    ✔ {{ apt.appointment_type }}
+                </small>
+
             </div>
-            {% endfor %}
+
+
+            <!-- CONSULTATION NOTES BUTTON -->
+            <div class="d-flex gap-2">
+
+                <button
+    type="button"
+    class="btn btn-sm rounded-pill fw-bold"
+    style="background-color: var(--color-matcha); color: white;"
+    data-appointment-id="{{ apt.id }}"
+    data-patient-name="{{ apt.user.username if apt.user else 'Patient' }}"
+    onclick="prepareNoteModal(this)"
+>
+    <i class="bi bi-journal-text me-1"></i>
+    Add / Edit Notes
+</button>
+
+            </div>
+
         </div>
+
+    </div>
+
+    {% else %}
+
+    <div class="text-center text-muted py-5">
+        <p>No completed sessions in the last 30 days.</p>
+    </div>
+
+    {% endfor %}
+</div>
         
     </div>
 </div>
@@ -158,6 +209,394 @@
                     <button type="submit" class="btn btn-danger rounded-pill px-4 fw-bold">Confirm Cancellation</button>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+<!-- CONSULTATION NOTES MODAL -->
+<!-- CONSULTATION NOTES MODAL -->
+<div
+    class="modal fade"
+    id="consultationNoteModal"
+    tabindex="-1"
+    aria-hidden="true"
+>
+    <div class="modal-dialog modal-dialog-centered">
+
+        <div
+            class="modal-content rounded-4 border-0 shadow"
+            style="border-top: 4px solid var(--color-matcha);"
+        >
+
+            <form
+                id="consultationNoteForm"
+                method="POST"
+                action=""
+            >
+
+                <!-- HEADER -->
+                <div class="modal-header border-0">
+
+                    <div>
+
+                        <h5
+                            id="consultationNoteTitle"
+                            class="modal-title fw-bold"
+                            style="color: var(--color-matcha);"
+                        >
+                            Consultation Notes
+                        </h5>
+
+                        <small class="text-muted">
+                            Patient:
+                            <span
+                                id="notePatientName"
+                                class="fw-bold"
+                            ></span>
+                        </small>
+
+                    </div>
+
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                    ></button>
+
+                </div>
+
+
+                <!-- BODY -->
+                <div class="modal-body p-4">
+
+                    <p
+                        id="noteDescription"
+                        class="text-muted small mb-3"
+                    >
+                        Record important information from the completed
+                        consultation for future reference.
+                    </p>
+
+
+                    <!-- LOADING -->
+                    <div
+                        id="noteLoading"
+                        class="text-center py-3 d-none"
+                    >
+                        <div
+                            class="spinner-border spinner-border-sm"
+                            style="color: var(--color-matcha);"
+                        ></div>
+
+                        <small class="text-muted ms-2">
+                            Loading notes...
+                        </small>
+                    </div>
+
+
+                    <!-- TEXTAREA -->
+                    <div
+                        id="noteInputContainer"
+                        class="mb-3"
+                    >
+
+                        <label
+                            for="consultationNotes"
+                            class="form-label fw-bold"
+                            style="color: var(--color-lavender);"
+                        >
+                            Session Notes
+                        </label>
+
+                        <textarea
+                            class="form-control rounded-3"
+                            id="consultationNotes"
+                            name="notes"
+                            rows="6"
+                            placeholder="Enter consultation notes..."
+                            required
+                            style="border-color: var(--color-mint);"
+                        ></textarea>
+
+                    </div>
+
+                </div>
+
+
+                <!-- FOOTER -->
+                <div class="modal-footer border-0">
+
+                    <button
+                        type="button"
+                        class="btn btn-light rounded-pill px-4 fw-bold"
+                        data-bs-dismiss="modal"
+                    >
+                        Cancel
+                    </button>
+
+                    <button
+                        type="submit"
+                        id="saveNoteButton"
+                        class="btn rounded-pill px-4 fw-bold text-white"
+                        style="background-color: var(--color-matcha);"
+                    >
+                        <i class="bi bi-save me-1"></i>
+                        Save Notes
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+</div>
+
+<script>
+    async function prepareNoteModal(button) {
+
+        // Get appointment information from the button
+        const appointmentId = button.dataset.appointmentId;
+        const patientName = button.dataset.patientName;
+
+        // Get HTML elements
+        const form =
+            document.getElementById('consultationNoteForm');
+
+        const patientNameElement =
+            document.getElementById('notePatientName');
+
+        const textarea =
+            document.getElementById('consultationNotes');
+
+        const title =
+            document.getElementById('consultationNoteTitle');
+
+        const saveButton =
+            document.getElementById('saveNoteButton');
+
+        const loading =
+            document.getElementById('noteLoading');
+
+        const inputContainer =
+            document.getElementById('noteInputContainer');
+
+
+        // Set form POST destination
+        form.action =
+            '/consultation-note/' + appointmentId;
+
+
+        // Show patient name
+        patientNameElement.innerText = patientName;
+
+
+        // Reset modal first
+        textarea.value = '';
+
+        title.innerText =
+            'Consultation Notes';
+
+        saveButton.innerHTML =
+            '<i class="bi bi-save me-1"></i> Save Notes';
+
+
+        // Show loading
+        loading.classList.remove('d-none');
+
+        inputContainer.classList.add('d-none');
+
+
+        // Open modal
+        const modalElement =
+            document.getElementById(
+                'consultationNoteModal'
+            );
+
+        const modal =
+            new bootstrap.Modal(modalElement);
+
+        modal.show();
+
+
+        try {
+
+            // Fetch existing note
+            const response = await fetch(
+                '/consultation-note/' + appointmentId
+            );
+
+            const data = await response.json();
+
+
+            // Existing notes found
+            if (data.exists) {
+
+                textarea.value = data.notes;
+
+                title.innerText =
+                    'Edit Consultation Notes';
+
+                saveButton.innerHTML =
+                    '<i class="bi bi-pencil-square me-1"></i> Update Notes';
+
+            }
+
+            // No notes yet
+            else {
+
+                textarea.value = '';
+
+                title.innerText =
+                    'Add Consultation Notes';
+
+                saveButton.innerHTML =
+                    '<i class="bi bi-save me-1"></i> Save Notes';
+
+            }
+
+        }
+
+        catch (error) {
+
+            console.error(
+                'Error loading consultation notes:',
+                error
+            );
+
+            textarea.value = '';
+
+        }
+
+        finally {
+
+            // Hide loading
+            loading.classList.add('d-none');
+
+            // Show textarea
+            inputContainer.classList.remove('d-none');
+
+        }
+    }
+</script>
+
+<script>
+    async function viewPatientInfo(patientId, patientName) {
+        // 1. Set the patient name in the UI and show the modal
+        document.getElementById('modalPatientName').innerText = patientName;
+        const modal = new bootstrap.Modal(document.getElementById('patientInfoModal'));
+        modal.show();
+        
+        // 2. Reset the UI states (show loader, hide data/errors)
+        document.getElementById('patientInfoLoading').classList.remove('d-none');
+        document.getElementById('patientInfoData').classList.add('d-none');
+        document.getElementById('patientInfoError').classList.add('d-none');
+        
+        try {
+            // 3. Ping the Flask Backend
+            const response = await fetch(`/counselor/patient/${patientId}/records`);
+            const data = await response.json();
+            
+            document.getElementById('patientInfoLoading').classList.add('d-none');
+            
+            // 4. Handle Privacy Opt-Out (403 Forbidden)
+            if (response.status === 403 || data.access_granted === false) {
+                const errorDiv = document.getElementById('patientInfoError');
+                errorDiv.innerHTML = `<i class="bi bi-shield-lock-fill fs-4 d-block mb-2"></i> ${data.message}`;
+                errorDiv.classList.remove('d-none');
+                return;
+            }
+
+            // 5. Handle Success: Render the Data
+            if (response.ok) {
+                document.getElementById('patientInfoData').classList.remove('d-none');
+                
+                // Render Moods
+                const moodContainer = document.getElementById('moodLogsContainer');
+                if (data.mood_logs && data.mood_logs.length > 0) {
+                    moodContainer.innerHTML = data.mood_logs.map(log => `
+                        <div class="card border-0 shadow-sm mb-2 rounded-3" style="background-color: #fdfbf7;">
+                            <div class="card-body p-3">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <strong style="color: var(--color-matcha);">${log.mood}</strong>
+                                    <small class="text-muted" style="font-size: 0.75rem;">${new Date(log.created_at).toLocaleDateString()}</small>
+                                </div>
+                                <p class="mb-0 small text-muted">${log.notes || 'No additional notes provided.'}</p>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    moodContainer.innerHTML = '<p class="text-muted small">No mood logs recorded yet.</p>';
+                }
+                
+                // Render Assessments
+                const assessmentContainer = document.getElementById('assessmentsContainer');
+                if (data.assessments && data.assessments.length > 0) {
+                    assessmentContainer.innerHTML = data.assessments.map(assessment => `
+                        <div class="card border-0 shadow-sm mb-2 rounded-3" style="background-color: #fdfbf7;">
+                            <div class="card-body p-3">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <strong style="color: var(--color-lavender);">Score: ${assessment.score}</strong>
+                                    <small class="text-muted" style="font-size: 0.75rem;">${new Date(assessment.created_at).toLocaleDateString()}</small>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    assessmentContainer.innerHTML = '<p class="text-muted small">No assessments recorded yet.</p>';
+                }
+            } else {
+                // Handle generic 500 server errors
+                throw new Error(data.message || "An unexpected error occurred.");
+            }
+        } catch (error) {
+            console.error("The exact error is:", error); // <-- Add this line
+            
+            document.getElementById('patientInfoLoading').classList.add('d-none');
+            document.getElementById('patientInfoError').innerText = "Failed to connect to the server. Please check the console.";
+            document.getElementById('patientInfoError').classList.remove('d-none');
+        }
+    }
+</script>
+
+<div class="modal fade" id="patientInfoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content rounded-4 border-0 shadow" style="border-top: 4px solid var(--color-matcha);">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold" style="color: var(--color-matcha);">
+                    Records: <span id="modalPatientName"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                
+                <div id="patientInfoLoading" class="text-center py-4">
+                    <div class="spinner-border" style="color: var(--color-matcha);" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+
+                <div id="patientInfoError" class="alert rounded-3 d-none fw-bold text-center" style="background-color: #f8d7da; color: #842029;">
+                </div>
+
+                <div id="patientInfoData" class="d-none">
+                    
+                    <h6 class="fw-bold mb-2" style="color: var(--color-lavender);">
+                        <i class="bi bi-emoji-smile me-2"></i>Recent Mood Logs
+                    </h6>
+                    <div id="moodLogsContainer" class="mb-4"></div>
+                    
+                    <h6 class="fw-bold mb-2" style="color: var(--color-lavender);">
+                        <i class="bi bi-clipboard2-check me-2"></i>Assessment Results
+                    </h6>
+                    <div id="assessmentsContainer"></div>
+                    
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal">Close</button>
+            </div>
         </div>
     </div>
 </div>
@@ -285,9 +724,11 @@
 <script>
     function prepareCancelModal(appointmentId) {
         const form = document.getElementById('cancelForm');
-        form.action = '/cancel/' + appointmentId; 
+
+        form.action = '/cancel-appointment/' + appointmentId;
+
         document.getElementById('cancelReason').value = '';
-        
+
         const modalElement = document.getElementById('cancelModal');
         const modalInstance = new bootstrap.Modal(modalElement);
         modalInstance.show();

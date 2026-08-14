@@ -3,9 +3,11 @@ import os
 import re
 from datetime import datetime
 
+from apscheduler.schedulers.background import BackgroundScheduler
 from flask import (  # type: ignore[import]
     Flask,
     flash,
+    jsonify,
     redirect,
     render_template,
     request,
@@ -23,21 +25,26 @@ from appointment_booking import (
     get_all_appointments,
     get_all_counselors,
     get_booked_slots,
+    get_consultation_history,
+    get_consultation_note,
     get_counselor_availability,
     get_counselor_dashboard_appointments,
     get_dashboard_appointments,
+    get_patient_notifications,
+    group_appointments_by_month,
+    mark_notification_as_read,
     remove_counselor_availability,
     reschedule_appointment,
     retrieve_slots,
+    save_consultation_note,
+    send_appointment_reminders,
     update_appointment_status,
 )
 from auth import auth as auth_blueprint
 from database import supabase
-from educational_resources import EducationalResourceService
+from educational_routes import educational as educational_blueprint
 from register import register as register_blueprint
 from wellbeing_tracking import wellbeing_bp
-
-educational_resources_service = EducationalResourceService()
 
 app = Flask(__name__)
 app.secret_key = "your_secret_key"  # Required for flash messages and sessions
@@ -64,6 +71,7 @@ app.register_blueprint(auth_blueprint)
 app.register_blueprint(register_blueprint)
 app.register_blueprint(wellbeing_bp)
 app.register_blueprint(admin_blueprint)
+app.register_blueprint(educational_blueprint)
 
 
 # Helper Function to Validate File Extensions
@@ -85,6 +93,52 @@ def format_datetime(date_string, format_string):
 def safe_json_filter(value):
     """Safely converts Python/Database objects to JSON strings, handling dates/UUIDs."""
     return json.dumps(value, default=str)
+
+
+# ==========================================================
+# APPOINTMENT REMINDER SCHEDULER
+# ==========================================================
+
+scheduler = BackgroundScheduler()
+
+scheduler.add_job(
+    func=send_appointment_reminders,
+    trigger="interval",
+    # minutes=5,
+    seconds=10,
+    id="appointment_reminders",
+    replace_existing=True,
+)
+
+scheduler_started = False
+
+
+@app.before_request
+def start_reminder_scheduler():
+    global scheduler_started
+
+    if not scheduler_started:
+        scheduler.start()
+        scheduler_started = True
+        print("Appointment reminder scheduler started.")
+
+
+@app.context_processor
+def inject_notification_count():
+    user_id = session.get("user_id")
+
+    if not user_id:
+        return {"unread_notification_count": 0}
+
+    try:
+        unread_notifications = get_patient_notifications(user_id, unread_only=True)
+
+        return {"unread_notification_count": len(unread_notifications)}
+
+    except Exception as e:
+        print(f"Error retrieving notification count: {e}")
+
+        return {"unread_notification_count": 0}
 
 
 # ==========================================
@@ -239,47 +293,22 @@ def profile():
     return render_template("profile.html", user=user, today_date=today_date)
 
 
-@app.route("/educational-resources", methods=["GET"])
-def educational_resources_dashboard():
-    if not (session.get("user_id") or session.get("user") or session.get("id")):
-        flash("Please log in to access educational resources.", "warning")
-        return redirect(url_for("auth.login_page"))
-
-    query = request.args.get("q", "").strip()
-
-    if query:
-        resources, message = educational_resources_service.search_resources(query)
-    else:
-        resources = educational_resources_service.browse_resources()
-        message = None
-
-    return render_template(
-        "educational_resources.html",
-        resources=resources,
-        query=query,
-        message=message,
-    )
-
-
 # ==========================================
 # APPOINTMENT DASHBOARD & COUNSELOR ROUTES
 # ==========================================
 @app.route("/dashboard")
 def appointment_dashboard():
+    print("CURRENT SESSION:", dict(session))
+
     user_id = session.get("user_id")
+
     if not user_id:
+        flash("Please log in first.", "warning")
         return redirect(url_for("auth.login_page"))
 
-    dashboard_data = get_dashboard_appointments(user_id)
+    data = get_dashboard_appointments(user_id)
 
-    return render_template(
-        "appointment_dashboard.html",
-        upcoming_count=dashboard_data["upcoming_count"],
-        completed_count=dashboard_data["completed_count"],
-        upcoming_appointments=dashboard_data["upcoming_appointments"],
-        completed_appointments=dashboard_data["completed_appointments"],
-        has_older=dashboard_data["has_older"],
-    )
+    return render_template("appointment_dashboard.html", **data)
 
 
 @app.route("/counselor/dashboard")
@@ -428,32 +457,58 @@ def handle_booking():
 @app.route("/appointments")
 def appointments():
     user_id = session.get("user_id")
+
     if not user_id:
+        flash("Please log in first.", "warning")
         return redirect(url_for("auth.login_page"))
 
-    appointments_data = get_all_appointments(user_id)
+    all_appointments = get_all_appointments(user_id)
+
+    # Separate appointments according to status
+    upcoming = [apt for apt in all_appointments if apt.get("status", "").lower() == "upcoming"]
+
+    completed = [apt for apt in all_appointments if apt.get("status", "").lower() == "completed"]
+
+    cancelled = [apt for apt in all_appointments if apt.get("status", "").lower() == "cancelled"]
+
+    # Group each list by month
+    all_grouped = group_appointments_by_month(all_appointments)
+
+    upcoming_grouped = group_appointments_by_month(upcoming)
+
+    completed_grouped = group_appointments_by_month(completed)
+
+    cancelled_grouped = group_appointments_by_month(cancelled)
 
     return render_template(
         "appointment.html",
-        appointments=appointments_data,
+        all_grouped=all_grouped,
+        upcoming_grouped=upcoming_grouped,
+        completed_grouped=completed_grouped,
+        cancelled_grouped=cancelled_grouped,
+        all_count=len(all_appointments),
+        upcoming_count=len(upcoming),
+        completed_count=len(completed),
+        cancelled_count=len(cancelled),
     )
 
 
-@app.route("/cancel/<int:appointment_id>", methods=["POST"])
-def handle_cancellation(appointment_id):
-    user_reason = request.form.get("reason")
+@app.route("/cancel-appointment/<int:appointment_id>", methods=["POST"])
+def cancel_booking(appointment_id):
+    reason = request.form.get("reason", "").strip()
 
-    success = cancel_appointment(appointment_id, user_reason)
+    if not reason:
+        flash("Please provide a cancellation reason.", "danger")
+        return redirect(request.referrer or url_for("home"))
+
+    success = cancel_appointment(appointment_id, reason)
 
     if success:
-        flash("Your appointment was successfully cancelled.", "success")
+        flash("Appointment cancelled successfully.", "success")
     else:
-        flash(
-            "There was an error cancelling your appointment. Please try again.",
-            "danger",
-        )
+        flash("Failed to cancel appointment.", "danger")
 
-    return redirect(url_for("appointment_dashboard"))
+    return redirect(request.referrer or url_for("home"))
 
 
 # ==========================================
@@ -525,3 +580,91 @@ def reschedule_page(appointment_id):
         appointment_id=appointment_id,
         therapist=therapist,
     )
+
+
+@app.route("/notifications")
+def notifications():
+    user_id = session.get("user_id")
+
+    if not user_id:
+        return redirect(url_for("auth.login_page"))
+
+    patient_notifications = get_patient_notifications(user_id)
+
+    return render_template("notifications.html", notifications=patient_notifications)
+
+
+@app.route("/notification/<int:notification_id>/read", methods=["POST"])
+def read_notification(notification_id):
+    user_id = session.get("user_id")
+
+    if not user_id:
+        return redirect(url_for("auth.login_page"))
+
+    success = mark_notification_as_read(notification_id, user_id)
+
+    if not success:
+        flash("Unable to update notification.", "danger")
+
+    return redirect(url_for("notifications"))
+
+
+@app.route("/notifications/unread")
+def unread_notifications():
+    user_id = session.get("user_id")
+
+    notifications = get_patient_notifications(user_id, unread_only=True)
+
+    return render_template("notifications.html", notifications=notifications)
+
+
+@app.route("/send-appointment-reminders")
+def appointment_reminders():
+    reminders_created = send_appointment_reminders()
+
+    flash(f"{reminders_created} appointment reminder(s) created.", "success")
+
+    return redirect(url_for("notifications"))
+
+
+@app.route("/consultation-note/<int:appointment_id>", methods=["GET", "POST"])
+def consultation_note(appointment_id):
+    therapist_id = 1
+
+    # ==========================================
+    # GET - Retrieve existing consultation notes
+    # ==========================================
+    if request.method == "GET":
+        existing_note = get_consultation_note(appointment_id, therapist_id)
+
+        if existing_note:
+            return jsonify({"exists": True, "notes": existing_note.get("notes", "")})
+
+        return jsonify({"exists": False, "notes": ""})
+
+    # ==========================================
+    # POST - Create or update consultation notes
+    # ==========================================
+    notes = request.form.get("notes", "").strip()
+
+    if not notes:
+        flash("Consultation notes cannot be empty.", "danger")
+        return redirect(request.referrer or url_for("counselor_dashboard"))
+
+    success = save_consultation_note(appointment_id, therapist_id, notes)
+
+    if success:
+        flash("Consultation notes saved successfully!", "success")
+    else:
+        flash("Unable to save consultation notes.", "danger")
+
+    return redirect(request.referrer or url_for("counselor_dashboard"))
+
+
+@app.route("/consultation-history")
+def consultation_history():
+    user_id = session.get("user_id")
+
+    history = get_consultation_history(user_id)
+
+    return render_template("consultation_history.html", history=history)

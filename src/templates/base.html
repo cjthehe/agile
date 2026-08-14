@@ -35,6 +35,21 @@
             opacity: 0.85;
             transform: scale(1.05);
         }
+
+        .notification-bell {
+            width: 42px;
+            height: 42px;
+            color: var(--color-lavender);
+            background-color: rgba(255, 255, 255, 0.9);
+            border: 1px solid #eeeeee;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .notification-bell:hover {
+            color: var(--color-matcha);
+            background-color: var(--color-mint);
+            transform: scale(1.05);
+        }
     </style>
 </head>
 
@@ -53,28 +68,134 @@
             </a>
 
             <!-- Right Navbar User State Controls -->
-            <div class="d-flex align-items-center gap-2">
-                <button id="logoutButton" class="btn btn-primary rounded-pill px-4 fw-medium {% if not session.get('user_id') %}d-none{% endif %}" onclick="handleLogout()">Logout</button>
-                <a id="loginLink" class="btn btn-outline-primary rounded-pill px-4 fw-medium {% if session.get('user_id') %}d-none{% endif %}" href="{{ url_for('auth.login_page') }}">Login</a>
+<div class="d-flex align-items-center gap-3">
 
-                {% if session.get('user_id') %}
-                    <!-- Dynamic Profile Link / Avatar Icon -->
-                    <a href="/profile"
-                       class="profile-avatar rounded-circle d-flex justify-content-center align-items-center text-decoration-none ms-2 overflow-hidden border border-2 border-white shadow-sm"
-                       title="{{ session.get('full_name') or 'User Profile' }}">
-                        {% if session.get('profile_picture') %}
-                            <img src="{{ session['profile_picture'] }}"
-                                 alt="Profile Picture"
-                                 class="w-100 h-100 object-fit-cover"
-                                 onerror="this.onerror=null; this.src='https://cdn-icons-png.flaticon.com/512/847/847969.png';">
-                        {% else %}
-                            <span class="bg-primary bg-opacity-10 text-primary w-100 h-100 d-flex justify-content-center align-items-center">
-                                <i class="bi bi-person-circle fs-4"></i>
-                            </span>
-                        {% endif %}
-                    </a>
-                {% endif %}
-            </div>
+    {% if session.get('user_id') %}
+
+        <!-- Notification Bell -->
+        <a
+            href="{{ url_for('notifications') }}"
+            class="notification-bell position-relative
+                   rounded-circle
+                   d-flex
+                   justify-content-center
+                   align-items-center
+                   text-decoration-none"
+            title="Notifications"
+        >
+
+            {% if unread_notification_count > 0 %}
+                <i class="bi bi-bell-fill fs-5"></i>
+            {% else %}
+                <i class="bi bi-bell fs-5"></i>
+            {% endif %}
+
+
+            {% if unread_notification_count > 0 %}
+
+                <span
+                    class="position-absolute
+                           top-0
+                           start-100
+                           translate-middle
+                           badge
+                           rounded-pill
+                           bg-danger"
+                    style="font-size: 0.65rem;"
+                >
+
+                    {% if unread_notification_count > 9 %}
+                        9+
+                    {% else %}
+                        {{ unread_notification_count }}
+                    {% endif %}
+
+                    <span class="visually-hidden">
+                        unread notifications
+                    </span>
+
+                </span>
+
+            {% endif %}
+
+        </a>
+
+    {% endif %}
+
+
+    <!-- Logout -->
+    <button
+        id="logoutButton"
+        class="btn btn-primary rounded-pill px-4 fw-medium
+               {% if not session.get('user_id') %}d-none{% endif %}"
+        onclick="handleLogout()"
+    >
+        Logout
+    </button>
+
+
+    <!-- Login -->
+    <a
+        id="loginLink"
+        class="btn btn-outline-primary rounded-pill px-4 fw-medium
+               {% if session.get('user_id') %}d-none{% endif %}"
+        href="{{ url_for('auth.login_page') }}"
+    >
+        Login
+    </a>
+
+
+    {% if session.get('user_id') %}
+
+        <!-- Dynamic Profile Link / Avatar Icon -->
+        <a
+            href="/profile"
+            class="profile-avatar rounded-circle
+                   d-flex
+                   justify-content-center
+                   align-items-center
+                   text-decoration-none
+                   overflow-hidden
+                   border
+                   border-2
+                   border-white
+                   shadow-sm"
+            title="{{ session.get('full_name') or 'User Profile' }}"
+        >
+
+            {% if session.get('profile_picture') %}
+
+                <img
+                    src="{{ session['profile_picture'] }}"
+                    alt="Profile Picture"
+                    class="w-100 h-100 object-fit-cover"
+                    onerror="
+                        this.onerror=null;
+                        this.src='https://cdn-icons-png.flaticon.com/512/847/847969.png';
+                    "
+                >
+
+            {% else %}
+
+                <span
+                    class="bg-primary bg-opacity-10
+                           text-primary
+                           w-100
+                           h-100
+                           d-flex
+                           justify-content-center
+                           align-items-center"
+                >
+                    <i class="bi bi-person-circle fs-4"></i>
+                </span>
+
+            {% endif %}
+
+        </a>
+
+    {% endif %}
+
+</div>
             
         </div>
     </nav>

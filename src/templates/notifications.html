@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<style>
+    /* Unread notification card */
+    .notification-unread {
+        border-left: 4px solid var(--color-matcha) !important;
+        background-color: #f8fbf6;
+    }
+
+    /* Read notification card */
+    .notification-read {
+        border-left: 4px solid #dddddd !important;
+        background-color: white;
+    }
+
+    /* Reminder icon */
+    .notification-icon-reminder {
+        width: 45px;
+        height: 45px;
+        background-color: var(--color-mint);
+        color: var(--color-matcha);
+    }
+
+    /* Cancelled appointment icon */
+    .notification-icon-cancelled {
+        width: 45px;
+        height: 45px;
+        background-color: #f8d7da;
+        color: #842029;
+    }
+</style>
+
+
+<div class="container py-4" style="max-width: 800px;">
+
+    <!-- HEADER -->
+    <div class="d-flex align-items-center gap-3 mb-4">
+
+        <a
+            href="javascript:history.back()"
+            class="btn btn-light rounded-circle"
+        >
+            <i class="bi bi-arrow-left"></i>
+        </a>
+
+        <div>
+            <h3
+                class="fw-bold mb-0"
+                style="color: var(--color-lavender);"
+            >
+                Notifications
+            </h3>
+
+            <small class="text-muted">
+                Appointment reminders and updates
+            </small>
+        </div>
+
+    </div>
+
+
+    <!-- NOTIFICATION LIST -->
+    {% for notification in notifications %}
+
+        <!-- CARD -->
+        {% if not notification.is_read %}
+
+            <div class="card border-0 rounded-4 shadow-sm mb-3 notification-unread">
+
+        {% else %}
+
+            <div class="card border-0 rounded-4 shadow-sm mb-3 notification-read">
+
+        {% endif %}
+
+
+            <div class="card-body p-4">
+
+                <div class="d-flex gap-3">
+
+
+                    <!-- NOTIFICATION ICON -->
+                    {% if notification.notification_type == 'appointment_cancelled' %}
+
+                        <div
+                            class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 notification-icon-cancelled"
+                        >
+                            <i class="bi bi-calendar-x fs-5"></i>
+                        </div>
+
+                    {% elif notification.notification_type == 'appointment_reminder_1h' %}
+
+                        <div
+                            class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 notification-icon-reminder"
+                        >
+                            <i class="bi bi-alarm fs-5"></i>
+                        </div>
+
+                    {% else %}
+
+                        <div
+                            class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 notification-icon-reminder"
+                        >
+                            <i class="bi bi-bell fs-5"></i>
+                        </div>
+
+                    {% endif %}
+
+
+                    <!-- NOTIFICATION CONTENT -->
+                    <div class="flex-grow-1">
+
+
+                        <!-- TITLE + NEW BADGE -->
+                        <div class="d-flex justify-content-between align-items-start gap-2">
+
+                            <h6
+                                class="fw-bold mb-1"
+                                style="color: var(--color-lavender);"
+                            >
+                                {{ notification.title }}
+                            </h6>
+
+
+                            {% if not notification.is_read %}
+
+                                <span
+                                    class="badge rounded-pill"
+                                    style="background-color: var(--color-matcha);"
+                                >
+                                    New
+                                </span>
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <!-- MESSAGE -->
+                        <p class="text-muted small mb-2">
+                            {{ notification.message }}
+                        </p>
+
+
+                        <!-- CREATED TIME -->
+                        <small class="text-muted">
+
+                            <i class="bi bi-clock me-1"></i>
+
+                            {{ notification.created_at[:16] | replace('T', ' ') }}
+
+                        </small>
+
+
+                        <!-- MARK AS READ -->
+                        {% if not notification.is_read %}
+
+                            <form
+                                method="POST"
+                                action="{{ url_for('read_notification', notification_id=notification.id) }}"
+                                class="mt-3"
+                            >
+
+                                <button
+                                    type="submit"
+                                    class="btn btn-sm rounded-pill fw-bold"
+                                    style="
+                                        border: 2px solid var(--color-matcha);
+                                        color: var(--color-matcha);
+                                    "
+                                >
+
+                                    <i class="bi bi-check2 me-1"></i>
+
+                                    Mark as Read
+
+                                </button>
+
+                            </form>
+
+                        {% endif %}
+
+
+                        <!-- CANCELLED APPOINTMENT ACTION -->
+                        {% if notification.notification_type == 'appointment_cancelled' %}
+
+                            <div class="mt-3">
+
+                                <a
+                                    href="/book"
+                                    class="btn btn-sm rounded-pill fw-bold text-white"
+                                    style="background-color: var(--color-lavender);"
+                                >
+
+                                    <i class="bi bi-calendar-plus me-1"></i>
+
+                                    Book Another Appointment
+
+                                </a>
+
+                            </div>
+
+                        {% endif %}
+
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+    <!-- NO NOTIFICATIONS -->
+    {% else %}
+
+        <div class="card border-0 rounded-4 shadow-sm">
+
+            <div class="card-body text-center py-5">
+
+                <i
+                    class="bi bi-bell-slash d-block mb-3"
+                    style="
+                        font-size: 3rem;
+                        color: var(--color-lavender);
+                        opacity: 0.4;
+                    "
+                ></i>
+
+                <h5 class="fw-bold">
+                    No Notifications
+                </h5>
+
+                <p class="text-muted mb-0">
+                    Your appointment reminders and updates will appear here.
+                </p>
+
+            </div>
+
+        </div>
+
+    {% endfor %}
+
+</div>
+
+{% endblock %}

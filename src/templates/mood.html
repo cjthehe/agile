@@ -32,6 +32,7 @@
         padding-bottom: 24px;
         border-bottom: 1px solid var(--border-color);
     }
+
     .wellbeing-page-header h1 {
         font-size: 2.25rem;
         font-weight: 800;
@@ -39,10 +40,18 @@
         color: var(--text-main);
         letter-spacing: -0.025em;
     }
+
     .wellbeing-page-header p {
         color: var(--text-muted);
         margin: 0;
         font-size: 1.05rem;
+    }
+
+    .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
     }
 
     .privacy-card {
@@ -53,12 +62,14 @@
         margin-bottom: 32px;
         box-shadow: var(--shadow-sm);
     }
+
     .privacy-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
         gap: 16px;
     }
+
     .privacy-title {
         font-weight: 700;
         font-size: 1.1rem;
@@ -67,11 +78,13 @@
         align-items: center;
         gap: 8px;
     }
+
     .privacy-desc {
         font-size: 0.9rem;
         color: var(--text-muted);
         margin: 0;
     }
+
     .switch {
         position: relative;
         display: inline-block;
@@ -79,19 +92,25 @@
         height: 26px;
         flex-shrink: 0;
     }
+
     .switch input {
         opacity: 0;
         width: 0;
         height: 0;
     }
+
     .slider {
         position: absolute;
         cursor: pointer;
-        top: 0; left: 0; right: 0; bottom: 0;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
         background-color: #CBD5E1;
         transition: .3s;
         border-radius: 34px;
     }
+
     .slider:before {
         position: absolute;
         content: "";
@@ -103,9 +122,11 @@
         transition: .3s;
         border-radius: 50%;
     }
+
     input:checked + .slider {
         background-color: var(--color-matcha, #10B981);
     }
+
     input:checked + .slider:before {
         transform: translateX(24px);
     }
@@ -130,11 +151,13 @@
         flex-direction: column;
         gap: 28px;
     }
+
     .form-group {
         display: flex;
         flex-direction: column;
         gap: 12px;
     }
+
     .form-label {
         font-weight: 600;
         font-size: 1.05rem;
@@ -147,6 +170,7 @@
         gap: 12px;
         margin-top: 4px;
     }
+
     .mood-btn {
         display: flex;
         flex-direction: column;
@@ -161,28 +185,34 @@
         transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         outline: none;
     }
+
     .mood-btn .emoji {
         font-size: 2rem;
         transition: transform 0.2s ease;
     }
+
     .mood-btn .label {
         font-size: 0.85rem;
         font-weight: 600;
         color: var(--text-muted);
     }
+
     .mood-btn:hover {
         border-color: var(--color-matcha, #10B981);
         background: var(--primary-light);
         transform: translateY(-2px);
     }
+
     .mood-btn:hover .emoji {
         transform: scale(1.2);
     }
+
     .mood-btn.active {
         border-color: var(--color-matcha, #10B981);
         background: var(--primary-light);
         box-shadow: 0 0 0 2px var(--color-matcha, #10B981);
     }
+
     .mood-btn.active .label {
         color: var(--color-matcha, #10B981);
     }
@@ -196,10 +226,11 @@
         font-size: 0.975rem;
         font-family: inherit;
         box-sizing: border-box;
-        resize: vertical; 
+        resize: vertical;
         transition: all 0.2s ease;
         background: #F8FAFC;
     }
+
     .note-box:focus {
         outline: none;
         background: #FFFFFF;
@@ -220,18 +251,20 @@
         text-decoration: none;
         transition: all 0.15s ease;
     }
+
     .btn-primary {
         background-color: var(--color-matcha, #10B981) !important;
         color: #FFFFFF !important;
         border: 1px solid var(--color-matcha, #10B981) !important;
         box-shadow: 0 4px 12px rgba(164, 194, 165, 0.2);
     }
+
     .btn-primary:hover {
         background-color: #87a088 !important;
         border-color: #87a088 !important;
         transform: translateY(-1px);
     }
-    
+
     .btn-secondary {
         background: transparent !important;
         border: 1px solid var(--color-lavender, #CBD5E1) !important;
@@ -240,6 +273,7 @@
         font-size: 0.95rem;
         border-radius: 8px !important;
     }
+
     .btn-secondary:hover {
         background-color: var(--color-lilac, #F1F5F9) !important;
         color: #444 !important;
@@ -256,6 +290,7 @@
         cursor: pointer;
         transition: all 0.2s ease;
     }
+
     .btn-edit-sm:hover {
         background: var(--color-matcha, #10B981);
         color: #FFFFFF;
@@ -267,12 +302,16 @@
         flex-direction: column;
         max-height: 600px;
     }
+
     .panel-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
         margin-bottom: 20px;
+        gap: 12px;
+        flex-wrap: wrap;
     }
+
     .panel-header h3 {
         font-size: 1.35rem;
         font-weight: 800;
@@ -280,6 +319,7 @@
         color: var(--text-main);
         letter-spacing: -0.02em;
     }
+
     .history-scroll-area {
         display: flex;
         flex-direction: column;
@@ -287,12 +327,15 @@
         overflow-y: auto;
         padding-right: 6px;
     }
+
     .history-scroll-area::-webkit-scrollbar {
         width: 6px;
     }
+
     .history-scroll-area::-webkit-scrollbar-track {
         background: transparent;
     }
+
     .history-scroll-area::-webkit-scrollbar-thumb {
         background-color: #CBD5E1;
         border-radius: 3px;
@@ -306,15 +349,19 @@
         box-shadow: var(--shadow-sm);
         transition: transform 0.2s ease;
     }
+
     .history-item:hover {
         transform: scale(1.01);
     }
+
     .history-item-top {
         display: flex;
         justify-content: space-between;
         align-items: center;
         margin-bottom: 12px;
+        gap: 12px;
     }
+
     .history-mood-badge {
         background: var(--color-lilac, #F1F5F9);
         color: #444444;
@@ -323,16 +370,19 @@
         font-weight: 700;
         font-size: 0.85rem;
     }
+
     .history-meta-right {
         display: flex;
         align-items: center;
         gap: 10px;
     }
+
     .history-time {
         color: var(--text-muted);
         font-size: 0.825rem;
         font-weight: 500;
     }
+
     .history-note {
         margin: 0;
         font-size: 0.95rem;
@@ -349,18 +399,21 @@
         border-radius: var(--radius-md);
         background: #FFFFFF;
     }
+
     .wellbeing-link {
         color: var(--text-main);
         text-decoration: none;
         font-weight: 600;
         font-size: 0.95rem;
     }
+
     .wellbeing-link:hover {
         color: #444;
         text-decoration: underline;
     }
 
-    .wellbeing-success, .wellbeing-error {
+    .wellbeing-success,
+    .wellbeing-error {
         padding: 18px 24px;
         border-radius: var(--radius-md);
         margin-bottom: 32px;
@@ -373,11 +426,70 @@
         box-shadow: var(--shadow-sm);
         animation: fadeIn 0.3s ease;
     }
-    .wellbeing-success { background: #ECFDF5; color: #065F46; border: 1px solid #A7F3D0; }
-    .wellbeing-error { background: #FEF2F2; color: #991B1B; border: 1px solid #FCA5A5; }
-    
-    .success-close-btn, .error-close-btn {
-        background: transparent; border: none; font-size: 1.25rem; cursor: pointer; line-height: 1;
+
+    .wellbeing-success {
+        background: #ECFDF5;
+        color: #065F46;
+        border: 1px solid #A7F3D0;
+    }
+
+    .wellbeing-error {
+        background: #FEF2F2;
+        color: #991B1B;
+        border: 1px solid #FCA5A5;
+    }
+
+    .success-close-btn,
+    .error-close-btn {
+        background: transparent;
+        border: none;
+        font-size: 1.25rem;
+        cursor: pointer;
+        line-height: 1;
+    }
+
+    /* Modal Styling for Editing */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(15, 23, 42, 0.5);
+        backdrop-filter: blur(4px);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+    }
+
+    .modal-content {
+        background: #FFFFFF;
+        border-radius: var(--radius-lg);
+        padding: 32px;
+        width: 90%;
+        max-width: 580px;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .modal-header h3 {
+        margin: 0;
+        font-size: 1.3rem;
+        font-weight: 700;
+    }
+
+    .modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        margin-top: 24px;
     }
 
     /* Modal Styling for Editing */
@@ -414,16 +526,58 @@
     }
 
     @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(-10px); }
-        to { opacity: 1; transform: translateY(0); }
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
-    @media (max-width: 960px) { .wellbeing-grid { grid-template-columns: 1fr; gap: 40px; } }
+    @media (max-width: 960px) {
+        .wellbeing-grid {
+            grid-template-columns: 1fr;
+            gap: 40px;
+        }
+    }
+
     @media (max-width: 600px) {
-        .mood-selection-row { grid-template-columns: repeat(3, 1fr); }
-        .wellbeing-page-header { flex-direction: column; align-items: flex-start; gap: 16px; }
-        .wellbeing-page-header .btn-secondary { width: 100%; }
-        .privacy-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+        .mood-selection-row {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .wellbeing-page-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 16px;
+        }
+
+        .header-actions {
+            width: 100%;
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .header-actions .wellbeing-btn {
+            width: 100%;
+        }
+
+        .privacy-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .history-item-top {
+            align-items: flex-start;
+        }
+
+        .history-meta-right {
+            flex-direction: column;
+            align-items: flex-end;
+        }
     }
 </style>
 
@@ -433,7 +587,23 @@
             <h1>Daily Mood Entry</h1>
             <p>Track your thoughts and feelings to build mindful habits.</p>
         </div>
-        <a class="wellbeing-btn btn-secondary" href="/wellbeing">Back to Wellbeing Tracking</a>
+
+        <div class="header-actions">
+            <a class="wellbeing-btn btn-secondary"
+               href="{{ url_for('wellbeing.mood_trends') }}">
+                View Mood Trend Report
+            </a>
+
+            <a class="wellbeing-btn btn-secondary"
+               href="{{ url_for('wellbeing.mood_reminder_settings') }}">
+                Mood Reminder Settings
+            </a>
+
+            <a class="wellbeing-btn btn-secondary"
+               href="{{ url_for('wellbeing.wellbeing') }}">
+                Back to Wellbeing Tracking
+            </a>
+        </div>
     </header>
 
     <!-- PRIVACY & SHARING PREFERENCE SECTION -->
@@ -443,7 +613,9 @@
                 <div class="privacy-title">
                     🔒 Counselor Record Sharing
                 </div>
-                <p class="privacy-desc">Allow your assigned counselor to view your self-assessments and mood history logs to personalize your guidance.</p>
+                <p class="privacy-desc">
+                    Allow your assigned counselor to view your self-assessments and mood history logs to personalize your guidance.
+                </p>
             </div>
             <label class="switch">
                 <input type="checkbox" id="privacyToggle">
@@ -495,19 +667,24 @@
                     <label class="form-label">How are you feeling right now?</label>
                     <div class="mood-selection-row">
                         <button type="button" class="mood-btn" data-value="😊 Happy">
-                            <span class="emoji">😊</span> <span class="label">Happy</span>
+                            <span class="emoji">😊</span>
+                            <span class="label">Happy</span>
                         </button>
                         <button type="button" class="mood-btn" data-value="🙂 Calm">
-                            <span class="emoji">🙂</span> <span class="label">Calm</span>
+                            <span class="emoji">🙂</span>
+                            <span class="label">Calm</span>
                         </button>
                         <button type="button" class="mood-btn" data-value="😐 Neutral">
-                            <span class="emoji">😐</span> <span class="label">Neutral</span>
+                            <span class="emoji">😐</span>
+                            <span class="label">Neutral</span>
                         </button>
                         <button type="button" class="mood-btn" data-value="😔 Sad">
-                            <span class="emoji">😔</span> <span class="label">Sad</span>
+                            <span class="emoji">😔</span>
+                            <span class="label">Sad</span>
                         </button>
                         <button type="button" class="mood-btn" data-value="😢 Very Sad">
-                            <span class="emoji">😢</span> <span class="label">Very Sad</span>
+                            <span class="emoji">😢</span>
+                            <span class="label">Very Sad</span>
                         </button>
                     </div>
                     <input type="hidden" name="mood" id="selectedMood" required>
@@ -515,17 +692,26 @@
 
                 <div class="form-group">
                     <label for="note" class="form-label">Personal Notes</label>
-                    <textarea id="note" name="note" class="note-box" placeholder="Write reflections here..."></textarea>
+                    <textarea
+                        id="note"
+                        name="note"
+                        class="note-box"
+                        placeholder="Write reflections here..."
+                    ></textarea>
                 </div>
 
-                <button type="submit" class="wellbeing-btn btn-primary">Save Mood Entry</button>
+                <button type="submit" class="wellbeing-btn btn-primary">
+                    Save Mood Entry
+                </button>
             </form>
         </main>
 
         <aside class="history-panel">
             <div class="panel-header">
                 <h3>Mood History</h3>
-                <a class="wellbeing-link assessment-link" href="/result">View Assessment History&rarr;</a>
+                <a class="wellbeing-link assessment-link" href="{{ url_for('wellbeing.result') }}">
+                    View Assessment History &rarr;
+                </a>
             </div>
 
             <div class="history-scroll-area">
@@ -536,16 +722,22 @@
                             <span class="history-mood-badge">{{ record.mood }}</span>
                             <div class="history-meta-right">
                                 <span class="history-time">{{ record.datetime }}</span>
-                                <button type="button" 
-                                        class="btn-edit-sm" 
-                                        data-id="{{ record.id }}" 
-                                        data-mood="{{ record.mood }}" 
-                                        data-note="{{ record.note or '' }}"
-                                        onclick="openEditModal(this)">
+
+                                {% if record.can_edit is not defined or record.can_edit %}
+                                <button
+                                    type="button"
+                                    class="btn-edit-sm"
+                                    data-id="{{ record.id }}"
+                                    data-mood="{{ record.mood }}"
+                                    data-note="{{ record.note or '' }}"
+                                    onclick="openEditModal(this)"
+                                >
                                     Edit
                                 </button>
+                                {% endif %}
                             </div>
                         </div>
+
                         {% if record.note %}
                         <p class="history-note">{{ record.note }}</p>
                         {% endif %}
@@ -568,24 +760,30 @@
             <h3>Edit Mood Log</h3>
             <button type="button" class="error-close-btn" onclick="closeEditModal()">&times;</button>
         </div>
+
         <form id="editForm" method="POST">
             <div class="form-group" style="margin-bottom: 20px;">
                 <label class="form-label">Update Mood</label>
                 <div class="mood-selection-row" id="editMoodRow">
                     <button type="button" class="mood-btn edit-mood-btn" data-value="😊 Happy">
-                        <span class="emoji">😊</span> <span class="label">Happy</span>
+                        <span class="emoji">😊</span>
+                        <span class="label">Happy</span>
                     </button>
                     <button type="button" class="mood-btn edit-mood-btn" data-value="🙂 Calm">
-                        <span class="emoji">🙂</span> <span class="label">Calm</span>
+                        <span class="emoji">🙂</span>
+                        <span class="label">Calm</span>
                     </button>
                     <button type="button" class="mood-btn edit-mood-btn" data-value="😐 Neutral">
-                        <span class="emoji">😐</span> <span class="label">Neutral</span>
+                        <span class="emoji">😐</span>
+                        <span class="label">Neutral</span>
                     </button>
                     <button type="button" class="mood-btn edit-mood-btn" data-value="😔 Sad">
-                        <span class="emoji">😔</span> <span class="label">Sad</span>
+                        <span class="emoji">😔</span>
+                        <span class="label">Sad</span>
                     </button>
                     <button type="button" class="mood-btn edit-mood-btn" data-value="😢 Very Sad">
-                        <span class="emoji">😢</span> <span class="label">Very Sad</span>
+                        <span class="emoji">😢</span>
+                        <span class="label">Very Sad</span>
                     </button>
                 </div>
                 <input type="hidden" name="mood" id="editSelectedMood" required>
@@ -593,12 +791,21 @@
 
             <div class="form-group">
                 <label for="editNote" class="form-label">Update Personal Notes</label>
-                <textarea id="editNote" name="note" class="note-box" placeholder="Update reflections..."></textarea>
+                <textarea
+                    id="editNote"
+                    name="note"
+                    class="note-box"
+                    placeholder="Update reflections..."
+                ></textarea>
             </div>
 
             <div class="modal-actions">
-                <button type="button" class="wellbeing-btn btn-secondary" onclick="closeEditModal()">Cancel</button>
-                <button type="submit" class="wellbeing-btn btn-primary">Save Changes</button>
+                <button type="button" class="wellbeing-btn btn-secondary" onclick="closeEditModal()">
+                    Cancel
+                </button>
+                <button type="submit" class="wellbeing-btn btn-primary">
+                    Save Changes
+                </button>
             </div>
         </form>
     </div>
@@ -645,40 +852,52 @@
     const privacyToastMsg = document.getElementById('privacyToastMsg');
 
     // Fetch initial setting
-    fetch('/privacy-settings')
+    fetch('{{ url_for("wellbeing.get_privacy_settings") }}')
         .then(res => res.json())
         .then(data => {
             if (data.share_records !== undefined) {
                 privacyToggle.checked = data.share_records;
             }
         })
-        .catch(err => console.error("Error loading privacy setting:", err));
+        .catch(err => console.error('Error loading privacy setting:', err));
 
     // Handle toggle switch state change
     privacyToggle.addEventListener('change', () => {
         const newValue = privacyToggle.checked;
 
-        fetch('/privacy-settings', {
+        fetch('{{ url_for("wellbeing.update_privacy_settings") }}', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ share_records: newValue })
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                share_records: newValue
+            })
         })
-        .then(res => res.json())
-        .then(data => {
-            privacyToastMsg.textContent = newValue 
-                ? "✨ Counselor record sharing enabled." 
-                : "🔒 Counselor record sharing disabled.";
+        .then(res => {
+            if (!res.ok) {
+                throw new Error('Failed to update privacy setting');
+            }
+            return res.json();
+        })
+        .then(() => {
+            privacyToastMsg.textContent = newValue
+                ? '✨ Counselor record sharing enabled.'
+                : '🔒 Counselor record sharing disabled.';
             privacyToast.style.display = 'flex';
         })
         .catch(err => {
-            console.error("Error updating privacy setting:", err);
+            console.error('Error updating privacy setting:', err);
             privacyToggle.checked = !newValue;
         });
     });
 
     // Dismiss banners
     function dismissBanner(id) {
-        document.getElementById(id).style.display = 'none';
+        const banner = document.getElementById(id);
+        if (banner) {
+            banner.style.display = 'none';
+        }
     }
 
     // Modal Control Functions
@@ -710,5 +929,12 @@
     function closeEditModal() {
         document.getElementById('editModal').style.display = 'none';
     }
+
+    // Close modal when clicking outside the modal content
+    document.getElementById('editModal').addEventListener('click', (event) => {
+        if (event.target.id === 'editModal') {
+            closeEditModal();
+        }
+    });
 </script>
 {% endblock %}
