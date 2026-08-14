@@ -50,7 +50,7 @@
                     <p class="text-muted mb-4">Browse trusted articles, videos, and self-help guides for mental health support.</p>
 
                     <div class="d-grid gap-2">
-                        <a href="{{ url_for('educational_resources_dashboard') if session.get('user_id') or session.get('user') or session.get('id') else url_for('auth.login_page') }}"
+                        <a href="{{ url_for('educational.resources_page') if session.get('user_id') or session.get('user') or session.get('id') else url_for('auth.login_page') }}"
                         class="edu-btn">
                             Explore Resources
                         </a>

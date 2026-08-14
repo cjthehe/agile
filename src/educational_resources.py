@@ -12,6 +12,7 @@ except Exception:  # Fallback if database setup isn't available
     supabase = None  # type: ignore[assignment]
 
 ALLOWED_RESOURCE_TYPES = frozenset({"article", "video", "self_help_guide"})
+DEFAULT_RESOURCE_CATEGORIES = ("Stress", "Anxiety", "Depression", "Mindfulness", "Self-Care")
 DEFAULT_STORAGE_PATH = Path(__file__).resolve().parent / "data" / "educational_resources.json"
 
 
@@ -238,6 +239,211 @@ class EducationalResourceService:
 
     def browse_resources(self) -> List[EducationalResource]:
         return [resource for resource in self.store.list_resources() if resource.is_active]
+
+    def filter_resources(self, category: str = "") -> List[EducationalResource]:
+        """Return active resources matching a category; an empty category resets the filter."""
+        selected = (category or "").strip().lower()
+        if not selected:
+            return self.browse_resources()
+        return [
+            resource
+            for resource in self.browse_resources()
+            if resource.category.strip().lower() == selected
+        ]
+
+    def _interaction_storage_path(self) -> Path:
+        return self.store.storage_path.with_name(
+            f"{self.store.storage_path.stem}_interactions.json"
+        )
+
+    def _load_local_interactions(self) -> Dict[str, Any]:
+        path = self._interaction_storage_path()
+        if not path.exists():
+            return {"favorites": {}, "ratings": {}}
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+            if not isinstance(data, dict):
+                raise ValueError
+            data.setdefault("favorites", {})
+            data.setdefault("ratings", {})
+            return data
+        except (json.JSONDecodeError, OSError, ValueError):
+            return {"favorites": {}, "ratings": {}}
+
+    def _save_local_interactions(self, data: Dict[str, Any]) -> None:
+        path = self._interaction_storage_path()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+
+    def add_favorite(self, patient_id: Any, resource_id: int) -> Tuple[bool, str]:
+        patient_key = str(patient_id).strip()
+        resource = self.store.get_resource(resource_id)
+        if not patient_key:
+            return False, "Patient must be signed in to save favorites."
+        if resource is None or not resource.is_active:
+            return False, "Educational resource not found."
+
+        if self.store._use_supabase and supabase is not None:
+            try:
+                existing = (
+                    supabase.table("resource_favorites")
+                    .select("resource_id")
+                    .eq("patient_id", patient_key)
+                    .eq("resource_id", resource_id)
+                    .execute()
+                )
+                if existing.data:
+                    return True, "Resource is already in your favorites."
+                supabase.table("resource_favorites").insert(
+                    {"patient_id": patient_key, "resource_id": resource_id}
+                ).execute()
+                return True, "Resource added to favorites successfully."
+            except Exception as exc:
+                print("SUPABASE FAVORITE INSERT ERROR:", exc)
+
+        data = self._load_local_interactions()
+        favorites = data["favorites"].setdefault(patient_key, [])
+        if resource_id not in favorites:
+            favorites.append(resource_id)
+            self._save_local_interactions(data)
+            return True, "Resource added to favorites successfully."
+        return True, "Resource is already in your favorites."
+
+    def remove_favorite(self, patient_id: Any, resource_id: int) -> Tuple[bool, str]:
+        patient_key = str(patient_id).strip()
+        if not patient_key:
+            return False, "Patient must be signed in to manage favorites."
+
+        if self.store._use_supabase and supabase is not None:
+            try:
+                supabase.table("resource_favorites").delete().eq("patient_id", patient_key).eq(
+                    "resource_id", resource_id
+                ).execute()
+                return True, "Resource removed from favorites."
+            except Exception as exc:
+                print("SUPABASE FAVORITE DELETE ERROR:", exc)
+
+        data = self._load_local_interactions()
+        favorites = data["favorites"].setdefault(patient_key, [])
+        if resource_id in favorites:
+            favorites.remove(resource_id)
+            self._save_local_interactions(data)
+        return True, "Resource removed from favorites."
+
+    def get_favorite_ids(self, patient_id: Any) -> List[int]:
+        patient_key = str(patient_id).strip()
+        if not patient_key:
+            return []
+
+        if self.store._use_supabase and supabase is not None:
+            try:
+                response = (
+                    supabase.table("resource_favorites")
+                    .select("resource_id")
+                    .eq("patient_id", patient_key)
+                    .execute()
+                )
+                favorite_ids: List[int] = []
+
+                for row in response.data or []:
+                    if isinstance(row, dict):
+                        resource_id_value = row.get("resource_id")
+
+                        if resource_id_value is not None:
+                            favorite_ids.append(int(resource_id_value))
+
+                return favorite_ids
+            except Exception as exc:
+                print("SUPABASE FAVORITE LOAD ERROR:", exc)
+
+        data = self._load_local_interactions()
+        return [int(item) for item in data["favorites"].get(patient_key, [])]
+
+    def get_favorites(self, patient_id: Any) -> List[EducationalResource]:
+        favorite_ids = set(self.get_favorite_ids(patient_id))
+        return [r for r in self.browse_resources() if r.id in favorite_ids]
+
+    def submit_rating(self, patient_id: Any, resource_id: int, rating: Any) -> Tuple[bool, str]:
+        patient_key = str(patient_id).strip()
+        if not patient_key:
+            return False, "Patient must be signed in to rate resources."
+        resource = self.store.get_resource(resource_id)
+        if resource is None or not resource.is_active:
+            return False, "Educational resource not found."
+        try:
+            rating_value = int(rating)
+        except (TypeError, ValueError):
+            return False, "Rating must be a number from 1 to 5."
+        if rating_value < 1 or rating_value > 5:
+            return False, "Rating must be between 1 and 5."
+
+        if self.store._use_supabase and supabase is not None:
+            try:
+                existing = (
+                    supabase.table("resource_ratings")
+                    .select("id")
+                    .eq("patient_id", patient_key)
+                    .eq("resource_id", resource_id)
+                    .execute()
+                )
+                if existing.data:
+                    return False, "You have already rated this resource."
+                supabase.table("resource_ratings").insert(
+                    {
+                        "patient_id": patient_key,
+                        "resource_id": resource_id,
+                        "rating": rating_value,
+                    }
+                ).execute()
+                return True, "Thank you. Your rating was submitted successfully."
+            except Exception as exc:
+                print("SUPABASE RATING INSERT ERROR:", exc)
+
+        data = self._load_local_interactions()
+        resource_ratings = data["ratings"].setdefault(str(resource_id), {})
+        if patient_key in resource_ratings:
+            return False, "You have already rated this resource."
+        resource_ratings[patient_key] = rating_value
+        self._save_local_interactions(data)
+        return True, "Thank you. Your rating was submitted successfully."
+
+    def get_rating_summary(self, resource_id: int) -> Dict[str, Any]:
+        values: List[int] = []
+        if self.store._use_supabase and supabase is not None:
+            try:
+                response = (
+                    supabase.table("resource_ratings")
+                    .select("rating")
+                    .eq("resource_id", resource_id)
+                    .execute()
+                )
+                values = []
+
+                for row in response.data or []:
+                    if isinstance(row, dict):
+                        rating_value = row.get("rating")
+
+                        if rating_value is not None:
+                            values.append(int(rating_value))
+            except Exception as exc:
+                print("SUPABASE RATING LOAD ERROR:", exc)
+        else:
+            data = self._load_local_interactions()
+            raw = data["ratings"].get(str(resource_id), {})
+            values = [int(value) for value in raw.values()]
+
+        count = len(values)
+        average = round(sum(values) / count, 1) if count else 0.0
+        return {"average": average, "count": count}
+
+    def get_rating_summaries(
+        self, resources: List[EducationalResource]
+    ) -> Dict[int, Dict[str, Any]]:
+        return {
+            resource.id: self.get_rating_summary(resource.id)
+            for resource in resources
+            if resource.id is not None
+        }
 
     def upload_resource(self, data: Dict[str, Any]) -> Tuple[EducationalResource, str]:
         payload = self._validate_resource_payload(data)

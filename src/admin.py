@@ -5,7 +5,11 @@ from datetime import datetime
 from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
 
 from database import supabase
-from educational_resources import EducationalResourceService
+from educational_resources import (
+    ALLOWED_RESOURCE_TYPES,
+    DEFAULT_RESOURCE_CATEGORIES,
+    EducationalResourceService,
+)
 
 try:
     # import shared helper to send emails (prints to console if SMTP not configured)
@@ -21,6 +25,26 @@ admin = Blueprint("admin", __name__)
 # simple in-memory fallback for local/testing runs
 fallback_counselors: dict[str, dict] = {}
 resource_service = EducationalResourceService()
+
+
+def _get_resource_options():
+    """Load database enum options, with safe defaults for local/test environments."""
+    categories = list(DEFAULT_RESOURCE_CATEGORIES)
+    types = sorted(ALLOWED_RESOURCE_TYPES)
+    try:
+        if supabase is not None and hasattr(supabase, "rpc"):
+            category_result = supabase.rpc("get_enum_values", {"enum_name": "Category"}).execute()
+            db_categories = [item["enumlabel"] for item in (category_result.data or [])]
+            if db_categories:
+                categories = db_categories
+
+            type_result = supabase.rpc("get_enum_values", {"enum_name": "resources_type"}).execute()
+            db_types = [item["enumlabel"] for item in (type_result.data or [])]
+            if db_types:
+                types = db_types
+    except Exception as exc:
+        print("RESOURCE OPTION LOAD ERROR:", exc)
+    return categories, types
 
 
 # ==========================================
@@ -42,25 +66,15 @@ def admin_page():
 @admin.route("/admin/resources", methods=["GET"])
 def admin_resources_page():
     resources = resource_service.browse_resources()
-
-    categories = []
-    types = []
-
-    try:
-        if supabase is not None:
-            category_result = supabase.rpc("get_enum_values", {"enum_name": "Category"}).execute()
-
-            categories = [item["enumlabel"] for item in category_result.data]
-
-            type_result = supabase.rpc("get_enum_values", {"enum_name": "resources_type"}).execute()
-
-            types = [item["enumlabel"] for item in type_result.data]
-
-    except Exception as e:
-        print(e)
+    categories, types = _get_resource_options()
+    rating_summaries = resource_service.get_rating_summaries(resources)
 
     return render_template(
-        "admin_resources.html", resources=resources, categories=categories, types=types
+        "admin_resources.html",
+        resources=resources,
+        categories=categories,
+        types=types,
+        rating_summaries=rating_summaries,
     )
 
 
@@ -75,6 +89,11 @@ def create_resource():
         "content_url": request.form.get("content_url", "").strip(),
         "tags": request.form.get("tags", "").strip(),
     }
+
+    categories, _ = _get_resource_options()
+    if payload["category"] not in categories:
+        flash("Please select a valid resource category.", "danger")
+        return redirect(url_for("admin.admin_resources_page"))
 
     try:
         _, message = resource_service.upload_resource(payload)
@@ -102,6 +121,11 @@ def update_resource(resource_id: str):
         "content_url": request.form.get("content_url", "").strip(),
         "tags": request.form.get("tags", "").strip(),
     }
+
+    categories, _ = _get_resource_options()
+    if updates["category"] not in categories:
+        flash("Please select a valid resource category.", "danger")
+        return redirect(url_for("admin.admin_resources_page"))
 
     try:
         _, message = resource_service.update_resource(resource_id_int, updates)
