@@ -23,11 +23,11 @@
                         <div class="row g-3 mb-3">
                             <div class="col-6">
                                 <label class="form-label fw-medium small text-muted">Valid From</label>
-                                <input type="date" class="form-control rounded-3" name="start_date" required>
+                                <input type="date" class="form-control rounded-3"id="startDate" name="start_date" required>
                             </div>
                             <div class="col-6">
                                 <label class="form-label fw-medium small text-muted">Valid Until</label>
-                                <input type="date" class="form-control rounded-3" name="end_date" required>
+                                <input type="date" class="form-control rounded-3" id="endDate" name="end_date" required>
                             </div>
                         </div>
 
@@ -99,31 +99,226 @@
 </div>
 
 <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        const form = document.querySelector('form[action="/manage-availability"]');
-        
-        form.addEventListener('submit', function(event) {
-            const startDate = form.querySelector('[name="start_date"]').value;
-            const endDate = form.querySelector('[name="end_date"]').value;
-            const startTime = form.querySelector('[name="start_time"]').value;
-            const endTime = form.querySelector('[name="end_time"]').value;
+document.addEventListener("DOMContentLoaded", function () {
 
-            // 1. Validate Dates
-            // (It's okay if start_date == end_date for a 1-day schedule, but start cannot be AFTER end)
+    const form =
+        document.querySelector(
+            'form[action="/manage-availability"]'
+        );
+
+    const startDateInput =
+        document.getElementById("startDate");
+
+    const endDateInput =
+        document.getElementById("endDate");
+
+
+    // ==========================================
+    // CALCULATE TODAY
+    // ==========================================
+    const today = new Date();
+
+    const todayString =
+        today.toISOString().split("T")[0];
+
+
+    // ==========================================
+    // CALCULATE 5 YEARS FROM TODAY
+    // ==========================================
+    const maxDate = new Date();
+
+    maxDate.setFullYear(
+        maxDate.getFullYear() + 5
+    );
+
+    const maxDateString =
+        maxDate.toISOString().split("T")[0];
+
+
+    // ==========================================
+    // SET DATE PICKER LIMITS
+    // ==========================================
+    startDateInput.min = todayString;
+    startDateInput.max = maxDateString;
+
+    endDateInput.min = todayString;
+    endDateInput.max = maxDateString;
+
+
+    // When start date changes,
+    // end date cannot be earlier
+    startDateInput.addEventListener(
+        "change",
+        function () {
+
+            endDateInput.min =
+                startDateInput.value || todayString;
+
+            // Clear invalid existing end date
+            if (
+                endDateInput.value &&
+                endDateInput.value <
+                startDateInput.value
+            ) {
+                endDateInput.value = "";
+            }
+        }
+    );
+
+
+    // ==========================================
+    // FORM VALIDATION
+    // ==========================================
+    form.addEventListener(
+        "submit",
+        function (event) {
+
+            const startDate =
+                startDateInput.value;
+
+            const endDate =
+                endDateInput.value;
+
+            const startTime =
+                form.querySelector(
+                    '[name="start_time"]'
+                ).value;
+
+            const endTime =
+                form.querySelector(
+                    '[name="end_time"]'
+                ).value;
+
+            const selectedDay =
+                form.querySelector(
+                    '[name="day"]'
+                ).value;
+
+
+            // ------------------------------
+            // Validation 1: Past date
+            // ------------------------------
+            if (startDate < todayString) {
+
+                alert(
+                    "Validation Error: " +
+                    "The start date cannot be in the past."
+                );
+
+                event.preventDefault();
+                return;
+            }
+
+
+            // ------------------------------
+            // Validation 2: Date order
+            // ------------------------------
             if (startDate > endDate) {
-                alert("Validation Error: The 'Valid Until' date cannot be earlier than the 'Valid From' date.");
-                event.preventDefault(); // Stops the form from submitting
+
+                alert(
+                    "Validation Error: " +
+                    "The 'Valid Until' date cannot " +
+                    "be earlier than the 'Valid From' date."
+                );
+
+                event.preventDefault();
                 return;
             }
 
-            // 2. Validate Times
-            // (End time must be strictly greater than start time)
-            if (startTime >= endTime) {
-                alert("Validation Error: Your End Time must be later than your Start Time.");
-                event.preventDefault(); // Stops the form from submitting
+
+            // ------------------------------
+            // Validation 3: Maximum 5 years
+            // ------------------------------
+            if (
+                startDate > maxDateString ||
+                endDate > maxDateString
+            ) {
+
+                alert(
+                    "Validation Error: " +
+                    "Working hours can only be defined " +
+                    "up to 5 years in advance."
+                );
+
+                event.preventDefault();
                 return;
             }
-        });
-    });
+
+
+            // ------------------------------
+            // Validation 4: Time order
+            // ------------------------------
+            if (startTime >= endTime) {
+
+                alert(
+                    "Validation Error: " +
+                    "End Time must be later " +
+                    "than Start Time."
+                );
+
+                event.preventDefault();
+                return;
+            }
+
+
+            // ------------------------------
+            // Validation 5:
+            // Selected weekday must exist
+            // ------------------------------
+            const dayMap = {
+                "Sunday": 0,
+                "Monday": 1,
+                "Tuesday": 2,
+                "Wednesday": 3,
+                "Thursday": 4,
+                "Friday": 5,
+                "Saturday": 6
+            };
+
+            const start = new Date(
+                startDate + "T00:00:00"
+            );
+
+            const end = new Date(
+                endDate + "T00:00:00"
+            );
+
+            let current = new Date(start);
+
+            let weekdayFound = false;
+
+            while (current <= end) {
+
+                if (
+                    current.getDay() ===
+                    dayMap[selectedDay]
+                ) {
+                    weekdayFound = true;
+                    break;
+                }
+
+                current.setDate(
+                    current.getDate() + 1
+                );
+            }
+
+
+            if (!weekdayFound) {
+
+                alert(
+                    "Validation Error: " +
+                    "There is no " +
+                    selectedDay +
+                    " within the selected date range."
+                );
+
+                event.preventDefault();
+                return;
+            }
+
+        }
+    );
+
+});
 </script>
 {% endblock %}

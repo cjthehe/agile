@@ -2,204 +2,730 @@
 
 {% block content %}
 
-<div class="container-fluid px-4 py-4" style="max-width: 1200px; margin: auto;">
-    
-    <!-- Back Button -->
-    <button class="btn btn-link text-dark text-decoration-none p-0 mb-4" onclick="history.back()">
-        <i class="bi bi-arrow-left me-2"></i>Back
-    </button>
+<style>
+    .appointment-tabs .nav-link {
+        color: #777;
+        border-radius: 50rem;
+        font-weight: 600;
+        padding: 0.55rem 1rem;
+    }
 
-    <!-- Header -->
-    <div class="mb-4">
-        <h3 class="fw-bold mb-1" style="color: var(--color-lavender);">Appointment History</h3>
-        <p class="text-muted">View all your past and upcoming therapy sessions</p>
+    .appointment-tabs .nav-link.active {
+        background-color: var(--color-lavender);
+        color: white;
+    }
+
+    .month-heading {
+        color: var(--color-lavender);
+        font-weight: 700;
+        margin-top: 2rem;
+        margin-bottom: 1rem;
+    }
+
+    .appointment-card {
+        transition: transform 0.2s ease,
+                    box-shadow 0.2s ease;
+        border-left: 4px solid #ddd !important;
+    }
+
+    .appointment-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 .5rem 1rem rgba(0, 0, 0, 0.07) !important;
+    }
+
+    .status-upcoming {
+        border-left-color: var(--color-matcha) !important;
+    }
+
+    .status-completed {
+        border-left-color: var(--color-lavender) !important;
+    }
+
+    .status-cancelled {
+        border-left-color: #dc3545 !important;
+    }
+
+    .appointment-avatar {
+        width: 48px;
+        height: 48px;
+        background-color: var(--color-lavender);
+        color: white;
+    }
+</style>
+
+
+<div
+    class="container py-4"
+    style="max-width: 950px;"
+>
+
+    <!-- ============================= -->
+    <!-- HEADER -->
+    <!-- ============================= -->
+
+    <div class="d-flex align-items-center mb-4">
+
+        <a
+            href="/dashboard"
+            class="btn btn-light rounded-circle shadow-sm me-3"
+        >
+            <i class="bi bi-arrow-left"></i>
+        </a>
+
+        <div>
+            <h3 class="fw-bold mb-1">
+                My Appointments
+            </h3>
+
+            <p class="text-muted mb-0">
+                View and manage all your counseling sessions.
+            </p>
+        </div>
+
     </div>
 
-    <!-- Filter Divider -->
-    <hr style="border-top: 2px solid var(--color-mint);" class="mb-4">
 
-    <!-- Filter Tabs -->
-    <div class="d-flex gap-3 mb-4 flex-wrap">
-        <button class="btn btn-sm fw-bold rounded-pill" id="filterAll" onclick="filterAppointments('all')" 
-                style="background-color: var(--color-lavender); color: white;">
-            All ({{ appointments|length }})
-        </button>
-        <button class="btn btn-sm fw-bold rounded-pill" id="filterUpcoming" onclick="filterAppointments('upcoming')" 
-                style="background-color: transparent; color: var(--color-matcha); border: 2px solid var(--color-matcha);">
-            Upcoming
-        </button>
-        <button class="btn btn-sm fw-bold rounded-pill" id="filterCompleted" onclick="filterAppointments('completed')" 
-                style="background-color: transparent; color: var(--color-lavender); border: 2px solid var(--color-lavender);">
-            Completed
-        </button>
-        <button class="btn btn-sm fw-bold rounded-pill" id="filterCancelled" onclick="filterAppointments('cancelled')" 
-                style="background-color: transparent; color: #dc3545; border: 2px solid #dc3545;">
-            Cancelled
-        </button>
-    </div>
+    <!-- ============================= -->
+    <!-- TABS -->
+    <!-- ============================= -->
 
-    <!-- Filter Divider -->
-    <hr style="border-top: 2px solid var(--color-mint);" class="mb-4">
+    <ul
+        class="nav nav-pills appointment-tabs gap-2 mb-4"
+        role="tablist"
+    >
 
-    <!-- Appointments Container -->
-    <div id="appointmentsContainer">
-        {% if appointments %}
-            {% set currentMonth = None %}
-            {% for appointment in appointments %}
-                {% set appointmentMonth = appointment.date_time[:7] %}
-                
-                <!-- Month Header -->
-                {% if appointmentMonth != currentMonth %}
-                    {% if currentMonth is not none %}
-                        </div>
+        <li class="nav-item">
+
+            <button
+                class="nav-link active"
+                data-bs-toggle="pill"
+                data-bs-target="#all"
+            >
+                All
+                <span class="ms-1">
+                    {{ all_count }}
+                </span>
+            </button>
+
+        </li>
+
+
+        <li class="nav-item">
+
+            <button
+                class="nav-link"
+                data-bs-toggle="pill"
+                data-bs-target="#upcoming"
+            >
+                Upcoming
+                <span class="ms-1">
+                    {{ upcoming_count }}
+                </span>
+            </button>
+
+        </li>
+
+
+        <li class="nav-item">
+
+            <button
+                class="nav-link"
+                data-bs-toggle="pill"
+                data-bs-target="#completed"
+            >
+                Completed
+                <span class="ms-1">
+                    {{ completed_count }}
+                </span>
+            </button>
+
+        </li>
+
+
+        <li class="nav-item">
+
+            <button
+                class="nav-link"
+                data-bs-toggle="pill"
+                data-bs-target="#cancelled"
+            >
+                Cancelled
+                <span class="ms-1">
+                    {{ cancelled_count }}
+                </span>
+            </button>
+
+        </li>
+
+    </ul>
+
+
+    <!-- ============================= -->
+    <!-- TAB CONTENT -->
+    <!-- ============================= -->
+
+    <div class="tab-content">
+
+
+        <!-- ================================================== -->
+        <!-- ALL APPOINTMENTS -->
+        <!-- ================================================== -->
+
+        <div
+            class="tab-pane fade show active"
+            id="all"
+        >
+
+            {% for month, appointments in all_grouped.items() %}
+
+                <h5 class="month-heading">
+                    <i class="bi bi-calendar3 me-2"></i>
+                    {{ month }}
+                </h5>
+
+
+                {% for apt in appointments %}
+
+                    {% if apt.status|lower == 'upcoming' %}
+
+                        <div class="card border-0 rounded-4 shadow-sm mb-3 appointment-card status-upcoming">
+
+                    {% elif apt.status|lower == 'completed' %}
+
+                        <div class="card border-0 rounded-4 shadow-sm mb-3 appointment-card status-completed">
+
+                    {% elif apt.status|lower == 'cancelled' %}
+
+                        <div class="card border-0 rounded-4 shadow-sm mb-3 appointment-card status-cancelled">
+
+                    {% else %}
+
+                        <div class="card border-0 rounded-4 shadow-sm mb-3 appointment-card">
+
                     {% endif %}
-                    <div class="mb-4">
-                        <h5 class="fw-bold mb-3" style="color: var(--color-lavender);">
-                            📅 {{ appointment.date_time | strftime('%B %Y') }}
-                        </h5>
-                    {% set currentMonth = appointmentMonth %}
-                {% endif %}
 
-                <!-- Appointment Card -->
-                <div class="card border-0 rounded-4 shadow-sm mb-3 appointmentCard" data-status="{{ appointment.status.lower() }}">
-                    <div class="card-body p-4">
-                        <!-- Status Badge -->
-                        <div class="mb-3">
-                            {% if appointment.status == "Upcoming" %}
-                                <span class="badge" style="background-color: var(--color-matcha); color: white; font-size: 0.85rem;">
-                                    🟢 Upcoming
-                                </span>
-                            {% elif appointment.status == "Completed" %}
-                                <span class="badge" style="background-color: var(--color-lavender); color: white; font-size: 0.85rem;">
-                                    ✔ Completed
-                                </span>
-                            {% elif appointment.status == "Cancelled" %}
-                                <span class="badge bg-danger" style="font-size: 0.85rem;">
-                                    ✕ Cancelled
-                                </span>
-                            {% endif %}
-                        </div>
 
-                        <!-- Therapist Info -->
-                        <div class="mb-3 d-flex align-items-center gap-3">
-                            <div class="rounded-circle d-flex align-items-center justify-content-center" 
-                                 style="width: 40px; height: 40px; background-color: var(--color-lavender); color: white; font-weight: bold; font-size: 0.9rem;">
-                                {{ appointment.therapist.name[0].upper() }}
+                        <div class="card-body p-4">
+
+
+                            <!-- STATUS -->
+                            <div class="mb-3">
+
+                                {% if apt.status|lower == 'upcoming' %}
+
+                                    <span class="badge rounded-pill bg-success">
+                                        <i class="bi bi-clock me-1"></i>
+                                        Upcoming
+                                    </span>
+
+                                {% elif apt.status|lower == 'completed' %}
+
+                                    <span
+                                        class="badge rounded-pill"
+                                        style="background-color: var(--color-lavender);"
+                                    >
+                                        <i class="bi bi-check-circle me-1"></i>
+                                        Completed
+                                    </span>
+
+                                {% elif apt.status|lower == 'cancelled' %}
+
+                                    <span class="badge rounded-pill bg-danger">
+                                        <i class="bi bi-x-circle me-1"></i>
+                                        Cancelled
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="badge rounded-pill bg-secondary">
+                                        {{ apt.status }}
+                                    </span>
+
+                                {% endif %}
+
                             </div>
-                            <div>
-                                <h6 class="fw-bold mb-1" style="color: var(--color-lavender);">
-                                    {{ appointment.therapist.name }}
-                                </h6>
-                                <small class="text-muted">{{ appointment.therapist.specialization if appointment.therapist.specialization else 'Therapist' }}</small>
+
+
+                            <div
+                                class="d-flex
+                                       flex-column
+                                       flex-md-row
+                                       justify-content-between
+                                       gap-3"
+                            >
+
+
+                                <!-- COUNSELOR -->
+                                <div class="d-flex gap-3">
+
+                                    <div
+                                        class="appointment-avatar
+                                               rounded-circle
+                                               d-flex
+                                               align-items-center
+                                               justify-content-center
+                                               fw-bold
+                                               flex-shrink-0"
+                                    >
+                                        {{ apt.therapist.name[0].upper()
+                                           if apt.therapist else 'T' }}
+                                    </div>
+
+
+                                    <div>
+
+                                        <h6
+                                            class="fw-bold mb-1"
+                                            style="color: var(--color-lavender);"
+                                        >
+                                            {{ apt.therapist.name
+                                               if apt.therapist
+                                               else 'Therapist' }}
+                                        </h6>
+
+                                        <small class="text-muted">
+                                            {{ apt.therapist.specialization
+                                               if apt.therapist
+                                                  and apt.therapist.specialization
+                                               else 'Therapist' }}
+                                        </small>
+
+
+                                        <!-- DATE / TIME -->
+                                        <div class="mt-3">
+
+                                            <small class="text-muted me-3">
+
+                                                <i class="bi bi-calendar3 me-1"></i>
+
+                                                {{ apt.formatted_date }}
+
+                                            </small>
+
+
+                                            <small class="text-muted">
+
+                                                <i class="bi bi-clock me-1"></i>
+
+                                                {{ apt.formatted_time }}
+
+                                            </small>
+
+                                        </div>
+
+
+                                        <!-- TYPE -->
+                                        <div class="mt-2">
+
+                                            <small class="text-muted">
+
+                                                {% if apt.appointment_type|lower == 'phone call' %}
+
+                                                    <i class="bi bi-telephone me-1"></i>
+                                                    Phone Call
+
+                                                {% else %}
+
+                                                    <i class="bi bi-people me-1"></i>
+                                                    In-Person
+
+                                                {% endif %}
+
+                                            </small>
+
+                                        </div>
+
+
+                                        <!-- CANCELLATION REASON -->
+                                        {% if
+                                            apt.status|lower == 'cancelled'
+                                            and apt.cancellation_reason
+                                        %}
+
+                                            <div
+                                                class="alert alert-light border mt-3 mb-0 py-2 px-3"
+                                            >
+                                                <small>
+
+                                                    <strong>
+                                                        Cancellation reason:
+                                                    </strong>
+
+                                                    {{ apt.cancellation_reason }}
+
+                                                </small>
+                                            </div>
+
+                                        {% endif %}
+
+                                    </div>
+
+                                </div>
+
+
+                                <!-- ACTION -->
+                                {% if apt.status|lower == 'upcoming' %}
+
+                                    <div
+                                        class="d-flex
+                                               align-items-start
+                                               gap-2"
+                                    >
+
+                                        <a
+                                            href="/reschedule/{{ apt.id }}"
+                                            class="btn btn-sm btn-outline-primary rounded-pill px-3"
+                                        >
+                                            Reschedule
+                                        </a>
+
+                                    </div>
+
+                                {% endif %}
+
+
                             </div>
+
                         </div>
 
-                        <!-- Appointment Details -->
-                        <div class="mb-3">
-                            <small class="d-block text-muted mb-1">
-                                📅 {{ appointment.date_time[:10] }}
-                                <span class="ms-3">🕒 {{ appointment.date_time[11:16] }}</span>
-                            </small>
-                            <small class="d-block text-muted">
-                                👥 {{ appointment.appointment_type if appointment.appointment_type else 'Session' }}
-                            </small>
-                        </div>
-
-                        <!-- Action Buttons -->
-                        {% if appointment.status == "Upcoming" %}
-                        <div class="d-flex gap-2">
-                            <button class="btn btn-sm rounded-pill fw-bold" 
-                                    style="background-color: var(--color-mint); color: #333;">
-                                Reschedule
-                            </button>
-                            <button class="btn btn-sm btn-outline-danger rounded-pill fw-bold"
-                                    onclick="prepareCancelModal('{{ appointment.id }}')">
-                                Cancel
-                            </button>
-                        </div>
-                        {% endif %}
                     </div>
+
+                {% endfor %}
+
+
+            {% else %}
+
+                <div class="text-center py-5 text-muted">
+
+                    <i
+                        class="bi bi-calendar-x d-block mb-3"
+                        style="font-size: 2.5rem;"
+                    ></i>
+
+                    <p>
+                        No appointments found.
+                    </p>
+
                 </div>
+
             {% endfor %}
-            </div>
-        {% else %}
-        <div class="text-center py-5">
-            <p class="text-muted">No appointments found.</p>
+
         </div>
-        {% endif %}
-    </div>
 
-</div>
 
-<!-- ==================== CANCELLATION MODAL ==================== -->
-<div class="modal fade" id="cancelModal" tabindex="-1" aria-labelledby="cancelModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow rounded-4" style="border-top: 4px solid var(--color-lavender);">
-            
-            <form id="cancelForm" method="POST" action="">
-                <div class="modal-header border-0">
-                    <h5 class="modal-title fw-bold" id="cancelModalLabel" style="color: var(--color-lavender);">Confirm Cancellation</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                
-                <div class="modal-body p-4">
-                    <p class="mb-3 text-dark">Are you sure you want to cancel this appointment? This action cannot be undone.</p>
-                    
-                    <div class="mb-3">
-                        <label for="cancelReason" class="form-label fw-bold" style="color: var(--color-lavender);">Reason for cancellation</label>
-                        <textarea class="form-control rounded-3" id="cancelReason" name="reason" rows="3" 
-                                  placeholder="Please let us know why you need to cancel..." required 
-                                  style="border-color: var(--color-mint);"></textarea>
+        <!-- ================================================== -->
+        <!-- UPCOMING -->
+        <!-- ================================================== -->
+
+        <div
+            class="tab-pane fade"
+            id="upcoming"
+        >
+
+            {% for month, appointments in upcoming_grouped.items() %}
+
+                <h5 class="month-heading">
+                    <i class="bi bi-calendar3 me-2"></i>
+                    {{ month }}
+                </h5>
+
+                {% for apt in appointments %}
+
+                    <div class="card border-0 rounded-4 shadow-sm mb-3 appointment-card status-upcoming">
+
+                        <div class="card-body p-4">
+
+                            <span class="badge rounded-pill bg-success mb-3">
+                                <i class="bi bi-clock me-1"></i>
+                                Upcoming
+                            </span>
+
+                            <div class="d-flex align-items-center gap-3">
+
+                                <div
+                                    class="appointment-avatar rounded-circle d-flex align-items-center justify-content-center fw-bold"
+                                >
+                                    {{ apt.therapist.name[0].upper()
+                                       if apt.therapist else 'T' }}
+                                </div>
+
+                                <div class="flex-grow-1">
+
+                                    <h6
+                                        class="fw-bold mb-1"
+                                        style="color: var(--color-lavender);"
+                                    >
+                                        {{ apt.therapist.name
+                                           if apt.therapist else 'Therapist' }}
+                                    </h6>
+
+                                    <small class="text-muted me-3">
+                                        <i class="bi bi-calendar3 me-1"></i>
+                                        {{ apt.formatted_date }}
+                                    </small>
+
+                                    <small class="text-muted">
+                                        <i class="bi bi-clock me-1"></i>
+                                        {{ apt.formatted_time }}
+                                    </small>
+
+                                    <div class="mt-2">
+                                        <small class="text-muted">
+                                            {{ apt.appointment_type }}
+                                        </small>
+                                    </div>
+
+                                </div>
+
+
+                                <a
+                                    href="/reschedule/{{ apt.id }}"
+                                    class="btn btn-sm btn-outline-primary rounded-pill px-3"
+                                >
+                                    Reschedule
+                                </a>
+
+                            </div>
+
+                        </div>
+
                     </div>
+
+                {% endfor %}
+
+            {% else %}
+
+                <div class="text-center py-5 text-muted">
+                    <i class="bi bi-calendar2-check fs-1 opacity-50"></i>
+                    <p class="mt-2">
+                        No upcoming appointments.
+                    </p>
                 </div>
-                
-                <div class="modal-footer border-0">
-                    <button type="button" class="btn rounded-pill px-4 fw-bold" data-bs-dismiss="modal" 
-                            style="background-color: var(--color-mint); color: #333;">Keep Appointment</button>
-                    <button type="submit" class="btn btn-danger rounded-pill px-4 fw-bold">Confirm Cancellation</button>
-                </div>
-            </form>
-            
+
+            {% endfor %}
+
         </div>
+
+
+        <!-- ================================================== -->
+        <!-- COMPLETED -->
+        <!-- ================================================== -->
+
+        <div
+            class="tab-pane fade"
+            id="completed"
+        >
+
+            {% for month, appointments in completed_grouped.items() %}
+
+                <h5 class="month-heading">
+                    <i class="bi bi-calendar3 me-2"></i>
+                    {{ month }}
+                </h5>
+
+                {% for apt in appointments %}
+
+                    <div class="card border-0 rounded-4 shadow-sm mb-3 appointment-card status-completed">
+
+                        <div class="card-body p-4">
+
+                            <span
+                                class="badge rounded-pill mb-3"
+                                style="background-color: var(--color-lavender);"
+                            >
+                                <i class="bi bi-check-circle me-1"></i>
+                                Completed
+                            </span>
+
+                            <div class="d-flex align-items-center gap-3">
+
+                                <div
+                                    class="appointment-avatar rounded-circle d-flex align-items-center justify-content-center fw-bold"
+                                >
+                                    {{ apt.therapist.name[0].upper()
+                                       if apt.therapist else 'T' }}
+                                </div>
+
+                                <div>
+
+                                    <h6
+                                        class="fw-bold mb-1"
+                                        style="color: var(--color-lavender);"
+                                    >
+                                        {{ apt.therapist.name
+                                           if apt.therapist else 'Therapist' }}
+                                    </h6>
+
+                                    <small class="text-muted me-3">
+                                        <i class="bi bi-calendar3 me-1"></i>
+                                        {{ apt.formatted_date }}
+                                    </small>
+
+                                    <small class="text-muted">
+                                        <i class="bi bi-clock me-1"></i>
+                                        {{ apt.formatted_time }}
+                                    </small>
+
+                                    <div class="mt-2">
+                                        <small class="text-muted">
+                                            {{ apt.appointment_type }}
+                                        </small>
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                {% endfor %}
+
+            {% else %}
+
+                <div class="text-center py-5 text-muted">
+
+                    <i class="bi bi-check-circle fs-1 opacity-50"></i>
+
+                    <p class="mt-2">
+                        No completed appointments.
+                    </p>
+
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+
+        <!-- ================================================== -->
+        <!-- CANCELLED -->
+        <!-- ================================================== -->
+
+        <div
+            class="tab-pane fade"
+            id="cancelled"
+        >
+
+            {% for month, appointments in cancelled_grouped.items() %}
+
+                <h5 class="month-heading">
+                    <i class="bi bi-calendar3 me-2"></i>
+                    {{ month }}
+                </h5>
+
+
+                {% for apt in appointments %}
+
+                    <div class="card border-0 rounded-4 shadow-sm mb-3 appointment-card status-cancelled">
+
+                        <div class="card-body p-4">
+
+                            <span
+                                class="badge rounded-pill bg-danger mb-3"
+                            >
+                                <i class="bi bi-x-circle me-1"></i>
+                                Cancelled
+                            </span>
+
+
+                            <div class="d-flex align-items-center gap-3">
+
+                                <div
+                                    class="appointment-avatar rounded-circle d-flex align-items-center justify-content-center fw-bold"
+                                >
+                                    {{ apt.therapist.name[0].upper()
+                                       if apt.therapist else 'T' }}
+                                </div>
+
+                                <div>
+
+                                    <h6
+                                        class="fw-bold mb-1"
+                                        style="color: var(--color-lavender);"
+                                    >
+                                        {{ apt.therapist.name
+                                           if apt.therapist else 'Therapist' }}
+                                    </h6>
+
+
+                                    <small class="text-muted me-3">
+
+                                        <i class="bi bi-calendar3 me-1"></i>
+
+                                        {{ apt.formatted_date }}
+
+                                    </small>
+
+
+                                    <small class="text-muted">
+
+                                        <i class="bi bi-clock me-1"></i>
+
+                                        {{ apt.formatted_time }}
+
+                                    </small>
+
+
+                                    <div class="mt-2">
+
+                                        <small class="text-muted">
+                                            {{ apt.appointment_type }}
+                                        </small>
+
+                                    </div>
+
+
+                                    {% if apt.cancellation_reason %}
+
+                                        <div
+                                            class="alert alert-light border mt-3 mb-0 py-2 px-3"
+                                        >
+
+                                            <small>
+
+                                                <strong>
+                                                    Reason:
+                                                </strong>
+
+                                                {{ apt.cancellation_reason }}
+
+                                            </small>
+
+                                        </div>
+
+                                    {% endif %}
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                {% endfor %}
+
+
+            {% else %}
+
+                <div class="text-center py-5 text-muted">
+
+                    <i class="bi bi-x-circle fs-1 opacity-50"></i>
+
+                    <p class="mt-2">
+                        No cancelled appointments.
+                    </p>
+
+                </div>
+
+            {% endfor %}
+
+        </div>
+
     </div>
+
 </div>
-
-<script>
-    function prepareCancelModal(appointmentId) {
-        document.getElementById('cancelForm').action = '/cancel/' + appointmentId;
-        document.getElementById('cancelReason').value = '';
-        new bootstrap.Modal(document.getElementById('cancelModal')).show();
-    }
-
-    function filterAppointments(status) {
-        // Update active filter button
-        document.querySelectorAll('[id^="filter"]').forEach(btn => {
-            btn.style.backgroundColor = 'transparent';
-            btn.style.borderColor = btn.style.color;
-            btn.style.color = btn.id === 'filterAll' ? 'var(--color-matcha)' : 
-                              btn.id === 'filterUpcoming' ? 'var(--color-matcha)' :
-                              btn.id === 'filterCompleted' ? 'var(--color-lavender)' : '#dc3545';
-        });
-
-        const activeBtn = document.getElementById('filter' + status.charAt(0).toUpperCase() + status.slice(1));
-        if (activeBtn) {
-            activeBtn.style.backgroundColor = status === 'all' ? 'var(--color-lavender)' :
-                                             status === 'upcoming' ? 'var(--color-matcha)' :
-                                             status === 'completed' ? 'var(--color-lavender)' : '#dc3545';
-            activeBtn.style.color = 'white';
-            activeBtn.style.border = 'none';
-        }
-
-        // Filter cards
-        const cards = document.querySelectorAll('.appointmentCard');
-        cards.forEach(card => {
-            if (status === 'all') {
-                card.style.display = 'block';
-            } else {
-                card.style.display = card.getAttribute('data-status') === status ? 'block' : 'none';
-            }
-        });
-    }
-</script>
 
 {% endblock %}

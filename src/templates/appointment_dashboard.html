@@ -11,10 +11,20 @@
 
 <div class="container-fluid px-4 py-4" style="max-width: 1200px; margin: auto;">
     
-    <div class="mb-4">
-        <h4 class="fw-bold mb-0">Good Afternoon, CJT 👋</h4>
-        <p class="text-muted">Manage your therapy sessions</p>
+    <div class="d-flex justify-content-between align-items-start mb-4">
+
+    <div>
+        <h4 class="fw-bold mb-0">
+            Good Afternoon, CJT 👋
+        </h4>
+
+        <p class="text-muted mb-0">
+            Manage your therapy sessions
+        </p>
     </div>
+
+
+</div>
 
     <div class="row g-3 mb-4">
         <div class="col-12 col-md-4">
@@ -88,32 +98,109 @@
             {% endfor %}
         </div>
         <div class="tab-pane fade" id="history">
-            {% for apt in completed_appointments %}
-            <div class="card border-0 rounded-4 shadow-sm mb-3" style="border-left: 4px solid var(--color-lavender);">
-                <div class="card-body p-4">
-                    <div class="d-flex align-items-center gap-3 mb-3">
-                        <div class="rounded-circle d-flex align-items-center justify-content-center" 
-                             style="width: 40px; height: 40px; background-color: var(--color-lavender); color: white; font-weight: bold; font-size: 0.9rem;">
-                            {{ apt.therapist.name[0].upper() if apt.therapist else 'T' }}
-                        </div>
-                        <div>
-                            <h6 class="fw-bold mb-0" style="color: var(--color-lavender);">{{ apt.therapist.name if apt.therapist else 'Therapist' }}</h6>
-                            <small class="text-muted">Therapist</small>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <small class="d-block text-muted mb-1">
-                            📅 {{ apt.date_time[:10] }}
-                        </small>
-                        <small class="d-block text-muted">
-                            ✔ {{ apt.appointment_type }}
-                        </small>
-                    </div>
+
+    {% for apt in completed_appointments %}
+
+    <div
+        class="card border-0 rounded-4 shadow-sm mb-3"
+        style="border-left: 4px solid var(--color-lavender);"
+    >
+
+        <div class="card-body p-4">
+
+            <div class="d-flex align-items-center gap-3 mb-3">
+
+                <div
+                    class="rounded-circle d-flex align-items-center justify-content-center"
+                    style="
+                        width: 40px;
+                        height: 40px;
+                        background-color: var(--color-lavender);
+                        color: white;
+                        font-weight: bold;
+                        font-size: 0.9rem;
+                    "
+                >
+
+                    {{ apt.therapist.name[0].upper()
+                       if apt.therapist else 'T' }}
+
                 </div>
+
+
+                <div>
+
+                    <h6
+                        class="fw-bold mb-0"
+                        style="color: var(--color-lavender);"
+                    >
+
+                        {{ apt.therapist.name
+                           if apt.therapist else 'Therapist' }}
+
+                    </h6>
+
+                    <small class="text-muted">
+                        Therapist
+                    </small>
+
+                </div>
+
             </div>
-            {% endfor %}
+
+
+            <div class="mb-3">
+
+                <small class="d-block text-muted mb-1">
+                    📅 {{ apt.date_time[:10] }}
+                </small>
+
+                <small class="d-block text-muted">
+                    ✔ {{ apt.appointment_type }}
+                </small>
+
+            </div>
+
         </div>
+
+    </div>
+
+    {% else %}
+
+    <div class="text-center text-muted py-4">
+
+        <i class="bi bi-clock-history fs-1 opacity-50"></i>
+
+        <p class="mt-2">
+            No completed consultations yet.
+        </p>
+
+    </div>
+
+    {% endfor %}
+
+
+    <!-- FULL CONSULTATION HISTORY -->
+    <div class="text-center mt-4">
+
+        <a
+            href="{{ url_for('consultation_history') }}"
+            class="btn rounded-pill px-4 fw-bold"
+            style="
+                border: 2px solid var(--color-lavender);
+                color: var(--color-lavender);
+            "
+        >
+
+            <i class="bi bi-clock-history me-2"></i>
+
+            View Full Consultation History
+
+        </a>
+
+    </div>
+
+</div>
     </div>
 
     <div class="text-center mt-3">
@@ -150,9 +237,23 @@ function prepareRescheduleModal(appointmentId, therapistId) {
 </script>
 
 <script>
-    function prepareCancelModal(id) {
-        document.getElementById('cancelForm').action = '/cancel/' + id;
-        new bootstrap.Modal(document.getElementById('cancelModal')).show();
+    function prepareCancelModal(appointmentId) {
+        const form = document.getElementById('cancelForm');
+
+        // Must match Flask route:
+        // /cancel-appointment/<appointment_id>
+        form.action = '/cancel-appointment/' + appointmentId;
+
+        // Clear previous cancellation reason
+        const reasonField = form.querySelector('[name="reason"]');
+        if (reasonField) {
+            reasonField.value = '';
+        }
+
+        // Show modal
+        const modalElement = document.getElementById('cancelModal');
+        const modalInstance = new bootstrap.Modal(modalElement);
+        modalInstance.show();
     }
 </script>
 {% endblock %}

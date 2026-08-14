@@ -58,16 +58,70 @@ def get_dashboard_appointments(user_id):
 
 
 def get_all_appointments(user_id):
-    response = supabase.table("appointment").select("""
-            id,
-            date_time,
-            appointment_type,
-            status,
-            user(username),
-            therapist(name)
-        """).eq("user_id", user_id).order("date_time", desc=True).execute()
+    """
+    Retrieves all appointments belonging to a patient,
+    sorted from newest to oldest.
+    """
+    try:
+        response = supabase.table("appointment").select("""
+                id,
+                date_time,
+                appointment_type,
+                status,
+                cancellation_reason,
+                therapist(
+                    id,
+                    name,
+                    specialization
+                )
+                """).eq("user_id", user_id).order("date_time", desc=True).execute()
 
-    return response.data
+        return response.data
+
+    except Exception as e:
+        print(f"Error retrieving appointments: {e}")
+        return []
+
+
+def group_appointments_by_month(appointments):
+    """
+    Groups appointments by month.
+
+    Example:
+    {
+        "August 2026": [appointment1, appointment2],
+        "July 2026": [appointment3]
+    }
+    """
+
+    grouped = {}
+
+    for apt in appointments:
+        raw_date = apt.get("date_time")
+
+        if not raw_date:
+            continue
+
+        try:
+            dt = datetime.fromisoformat(raw_date.replace("Z", "+00:00"))
+
+            month_name = dt.strftime("%B %Y")
+
+            apt["formatted_date"] = dt.strftime("%d %b %Y")
+
+            apt["formatted_time"] = dt.strftime("%I:%M %p")
+
+        except ValueError:
+            month_name = "Unknown Date"
+            apt["formatted_date"] = raw_date
+            apt["formatted_time"] = ""
+
+        if month_name not in grouped:
+            grouped[month_name] = []
+
+        grouped[month_name].append(apt)
+
+    return grouped
 
 
 # COUNSELOR APPOINTMENT LIST
@@ -165,27 +219,77 @@ def auto_complete_past_appointments():
 
 # COUNSELOR AVAILABILITY
 def build_smart_schedule(counselor_rules):
+    """
+    Converts counselor availability rules into
+    actual date-specific 2-hour appointment slots.
+
+    Example:
+
+    {
+        "2026-08-17": [
+            "09.00 am",
+            "11.00 am",
+            "01.00 pm",
+            "03.00 pm"
+        ]
+    }
+    """
+
     smart_schedule = {}
+
     today = datetime.now().date()
 
-    # Check the next 90 days
+    # Show bookable dates for the next 90 days
     for i in range(90):
         check_date = today + timedelta(days=i)
-        day_name = check_date.strftime("%A")  # e.g., "Monday"
-        date_str = check_date.strftime("%Y-%m-%d")  # e.g., "2026-10-05"
 
-        # Look for a valid rule for this date
+        day_name = check_date.strftime("%A")
+
+        date_str = check_date.strftime("%Y-%m-%d")
+
         for rule in counselor_rules:
-            rule_start = datetime.strptime(rule["start_date"], "%Y-%m-%d").date()
-            rule_end = datetime.strptime(rule["end_date"], "%Y-%m-%d").date()
 
-            # If the rule applies to this day AND the date falls within the rule's active range
-            if rule["day"] == day_name and rule_start <= check_date <= rule_end:
-                if date_str not in smart_schedule:
-                    smart_schedule[date_str] = []
-                smart_schedule[date_str].append(
-                    f"{rule['start_time'][:5]} - {rule['end_time'][:5]}"
-                )
+            start_date = rule.get("start_date")
+            end_date = rule.get("end_date")
+
+            if not start_date or not end_date:
+                continue
+
+            try:
+                rule_start = datetime.strptime(start_date, "%Y-%m-%d").date()
+
+                rule_end = datetime.strptime(end_date, "%Y-%m-%d").date()
+
+            except ValueError:
+                continue
+
+            rule_day = rule.get("day", "").strip().title()
+
+            # Check:
+            # 1. weekday matches
+            # 2. date falls inside effective date range
+            if rule_day == day_name and rule_start <= check_date <= rule_end:
+
+                generated_slots = generate_slots(rule.get("start_time"), rule.get("end_time"))
+
+                if generated_slots:
+
+                    if date_str not in smart_schedule:
+                        smart_schedule[date_str] = []
+
+                    for slot in generated_slots:
+
+                        # Convert:
+                        # 09:00 AM
+                        # into:
+                        # 09.00 am
+                        #
+                        # because create_appointment()
+                        # currently expects this format.
+                        formatted_slot = slot.replace(":", ".").lower()
+
+                        if formatted_slot not in smart_schedule[date_str]:
+                            smart_schedule[date_str].append(formatted_slot)
 
     return smart_schedule
 
@@ -203,33 +307,113 @@ def get_counselor_availability(therapist_id):
 
 
 def add_counselor_availability(therapist_id, day, start_time, end_time, start_date, end_date):
-    """Inserts a new day/time rule with effective date ranges and validation checks."""
+    """
+    Inserts a new counselor availability rule
+    with date and time validation.
+    """
+
     try:
-        # --- BACKEND VALIDATION ---
-        # 1. Parse dates and check logic
+        # ==========================================
+        # 1. PARSE DATES
+        # ==========================================
         start_d = datetime.strptime(start_date, "%Y-%m-%d").date()
+
         end_d = datetime.strptime(end_date, "%Y-%m-%d").date()
 
-        if start_d > end_d:
-            print("Validation Failed: Start date is after End date")
+        today = datetime.now().date()
+
+        # Calculate maximum allowed date: 5 years from today
+        try:
+            max_date = today.replace(year=today.year + 5)
+        except ValueError:
+            # Handles 29 February safely
+            max_date = today.replace(year=today.year + 5, month=2, day=28)
+
+        # ==========================================
+        # VALIDATION 1:
+        # Start date cannot be in the past
+        # ==========================================
+        if start_d < today:
+            print("Validation Failed: " "Start date cannot be in the past.")
             return False
 
-        # 2. Parse times and check logic
+        # ==========================================
+        # VALIDATION 2:
+        # Start date must not be after end date
+        # ==========================================
+        if start_d > end_d:
+            print("Validation Failed: " "Start date is after end date.")
+            return False
+
+        # ==========================================
+        # VALIDATION 3:
+        # Dates cannot exceed 5 years
+        # ==========================================
+        if start_d > max_date or end_d > max_date:
+            print(
+                "Validation Failed: " "Schedule cannot be defined " "more than 5 years in advance."
+            )
+            return False
+
+        # ==========================================
+        # 2. VALIDATE SELECTED DAY
+        # ==========================================
+        valid_days = {
+            "Monday": 0,
+            "Tuesday": 1,
+            "Wednesday": 2,
+            "Thursday": 3,
+            "Friday": 4,
+            "Saturday": 5,
+            "Sunday": 6,
+        }
+
+        formatted_day = day.strip().title()
+
+        if formatted_day not in valid_days:
+            print("Validation Failed: Invalid weekday.")
+            return False
+
+        # Check whether selected weekday exists
+        # within the chosen date range
+        selected_day_number = valid_days[formatted_day]
+
+        days_until_selected = (selected_day_number - start_d.weekday()) % 7
+
+        first_occurrence = start_d + timedelta(days=days_until_selected)
+
+        if first_occurrence > end_d:
+            print(
+                "Validation Failed: "
+                f"There is no {formatted_day} "
+                "within the selected date range."
+            )
+            return False
+
+        # ==========================================
+        # 3. PARSE AND VALIDATE TIMES
+        # ==========================================
         start_t = datetime.strptime(start_time, "%H:%M").time()
+
         end_t = datetime.strptime(end_time, "%H:%M").time()
 
+        # ==========================================
+        # VALIDATION 4:
+        # End time must be after start time
+        # ==========================================
         if start_t >= end_t:
-            print("Validation Failed: Start time is after or equal to End time")
+            print("Validation Failed: " "End time must be later " "than start time.")
             return False
-        # --------------------------
 
-        # If validation passes, insert into Supabase
+        # ==========================================
+        # 4. INSERT INTO SUPABASE
+        # ==========================================
         response = (
             supabase.table("availability")
             .insert(
                 {
                     "therapist_id": therapist_id,
-                    "day": day.strip().title(),
+                    "day": formatted_day,
                     "start_time": f"{start_time}:00",
                     "end_time": f"{end_time}:00",
                     "start_date": start_date,
@@ -238,7 +422,13 @@ def add_counselor_availability(therapist_id, day, start_time, end_time, start_da
             )
             .execute()
         )
-        return True if response.data else False
+
+        return bool(response.data)
+
+    except ValueError as e:
+        print(f"Validation Failed: Invalid date/time format: {e}")
+        return False
+
     except Exception as e:
         print(f"Error adding availability: {e}")
         return False
@@ -339,54 +529,49 @@ def generate_slots(start_time_str, end_time_str):
 
 
 def get_all_counselors():
-    response = supabase.table("therapist").select("""
-        *,
-        availability(day, start_time, end_time)
-    """).execute()
+    """
+    Fetches all counselors together with their availability
+    and creates a date-specific smart schedule for the calendar.
+    """
 
-    counselors = response.data
+    try:
+        response = supabase.table("therapist").select("""
+                *,
+                availability(
+                    id,
+                    day,
+                    start_time,
+                    end_time,
+                    start_date,
+                    end_date
+                )
+                """).execute()
 
-    day_to_int = {
-        "Sunday": 0,
-        "Monday": 1,
-        "Tuesday": 2,
-        "Wednesday": 3,
-        "Thursday": 4,
-        "Friday": 5,
-        "Saturday": 6,
-    }
+        counselors = response.data
 
-    for c in counselors:
-        schedules = c.get("availability", [])
+        for counselor in counselors:
+            schedules = counselor.get("availability", [])
 
-        display_hours = []
-        working_days = []
-        slots_by_day = {}  # <-- NEW: Maps specific slots to the day of the week
+            display_hours = []
 
-        for sched in schedules:
-            day = sched.get("day", "").strip().title()
-            start = sched.get("start_time", "")
-            end = sched.get("end_time", "")
+            for sched in schedules:
+                day = sched.get("day", "").strip().title()
+                start = sched.get("start_time", "")
+                end = sched.get("end_time", "")
 
-            if day and start and end:
-                display_hours.append(f"{day[:3]}: {start[:5]}-{end[:5]}")
+                if day and start and end:
+                    display_hours.append(f"{day[:3]}: {start[:5]}-{end[:5]}")
 
-                # Generate slots for THIS specific day
-                daily_slots = generate_slots(start, end)
+            counselor["formatted_hours"] = display_hours if display_hours else ["Schedule TBD"]
 
-                if day in day_to_int:
-                    day_int = day_to_int[day]
-                    working_days.append(day_int)
-                    # Save the slots directly under the day's integer
-                    slots_by_day[day_int] = daily_slots
+            # THIS IS THE IMPORTANT PART
+            counselor["smart_schedule"] = build_smart_schedule(schedules)
 
-        c["formatted_hours"] = display_hours if display_hours else ["Schedule TBD"]
-        c["working_days"] = list(set(working_days))
+        return counselors
 
-        # Send the mapped dictionary to the frontend instead of a flat list
-        c["slots_by_day"] = slots_by_day
-
-    return counselors
+    except Exception as e:
+        print(f"Error retrieving counselors: {e}")
+        return []
 
 
 # VALIDATION FOR SLOTS
@@ -506,26 +691,91 @@ def check_user_slot_taken(user_id, date_time):
 
 
 def cancel_appointment(appointment_id, reason):
+    """
+    Cancels an appointment and creates a notification
+    for the patient.
+    """
+
     current_time = datetime.now().isoformat()
 
     try:
+        # ==========================================
+        # 1. GET APPOINTMENT FIRST
+        # ==========================================
+        appointment_response = (
+            supabase.table("appointment")
+            .select("id, user_id, date_time, therapist(name)")
+            .eq("id", appointment_id)
+            .execute()
+        )
+
+        print("Appointment before cancellation:", appointment_response.data)
+
+        if not appointment_response.data:
+            print("❌ Appointment not found.")
+            return False
+
+        appointment = appointment_response.data[0]
+
+        patient_id = appointment.get("user_id")
+
+        print("Patient ID to notify:", patient_id)
+
+        # ==========================================
+        # 2. CANCEL APPOINTMENT
+        # ==========================================
         response = (
             supabase.table("appointment")
             .update(
-                {"status": "Cancelled", "cancellation_reason": reason, "cancelled_at": current_time}
+                {
+                    "status": "Cancelled",
+                    "cancellation_reason": reason,
+                    "cancelled_at": current_time,
+                }
             )
             .eq("id", appointment_id)
             .execute()
         )
 
-        # If response.data has items, the update was successful
-        if response.data:
-            return True
+        if not response.data:
+            print("❌ Appointment cancellation failed.")
+            return False
 
-        return False
+        print("✅ Appointment cancelled.")
+
+        # ==========================================
+        # 3. PREPARE NOTIFICATION
+        # ==========================================
+        therapist_name = _get_therapist_name(appointment)
+
+        formatted_date = _format_appointment_datetime(appointment.get("date_time"))
+
+        # ==========================================
+        # 4. CREATE PATIENT NOTIFICATION
+        # ==========================================
+        notification_created = create_patient_notification(
+            user_id=patient_id,
+            appointment_id=appointment_id,
+            notification_type="appointment_cancelled",
+            title="Appointment Cancelled",
+            message=(
+                f"Your appointment with "
+                f"{therapist_name} on "
+                f"{formatted_date} "
+                f"has been cancelled. "
+                f"You may book another appointment."
+            ),
+        )
+
+        if notification_created:
+            print("✅ Cancellation notification created.")
+        else:
+            print("⚠️ Appointment cancelled, " "but notification was NOT created.")
+
+        return True
 
     except Exception as e:
-        print(f"Error cancelling appointment in Supabase: {e}")
+        print(f"❌ Error cancelling appointment: {e}")
         return False
 
 
@@ -562,3 +812,412 @@ def reschedule_appointment(appointment_id, therapist_id, date_str, slot):
     except Exception as e:
         print(f"Error rescheduling appointment in Supabase: {e}")
         return False
+
+
+# ============================================================
+# APPOINTMENT REMINDERS & PATIENT NOTIFICATIONS
+# ============================================================
+
+
+def _format_appointment_datetime(date_time_value):
+    """
+    Converts a database date_time value into a user-friendly format.
+    """
+    if not date_time_value:
+        return "the scheduled time"
+
+    try:
+        raw_value = str(date_time_value).replace("Z", "+00:00")
+        dt_obj = datetime.fromisoformat(raw_value)
+        return dt_obj.strftime("%d %b %Y, %I:%M %p")
+    except (TypeError, ValueError):
+        return str(date_time_value)
+
+
+def _parse_appointment_datetime(date_time_value):
+    """
+    Converts a Supabase date_time value into a datetime object.
+    This project currently stores appointment date/time without a timezone.
+    """
+    if isinstance(date_time_value, datetime):
+        return date_time_value.replace(tzinfo=None)
+
+    raw_value = str(date_time_value).strip()
+
+    # Support both PostgreSQL/ISO values and the format already used
+    # by create_appointment().
+    try:
+        parsed = datetime.fromisoformat(raw_value.replace("Z", "+00:00"))
+        return parsed.replace(tzinfo=None)
+    except ValueError:
+        return datetime.strptime(raw_value, "%Y-%m-%d %H:%M:%S")
+
+
+def _get_therapist_name(appointment):
+    """
+    Safely extracts the therapist name from a Supabase joined record.
+    """
+    therapist = appointment.get("therapist")
+
+    if isinstance(therapist, dict):
+        return therapist.get("name") or "your counselor"
+
+    if isinstance(therapist, list) and therapist:
+        return therapist[0].get("name") or "your counselor"
+
+    return "your counselor"
+
+
+def notification_already_exists(user_id, appointment_id, notification_type):
+    """
+    Prevents duplicate reminders or cancellation notifications.
+    """
+    try:
+        response = (
+            supabase.table("notification")
+            .select("id")
+            .eq("user_id", user_id)
+            .eq("appointment_id", appointment_id)
+            .eq("notification_type", notification_type)
+            .execute()
+        )
+        return bool(response.data)
+    except Exception as e:
+        print(f"Error checking existing notification: {e}")
+        return False
+
+
+def create_patient_notification(
+    user_id,
+    appointment_id,
+    notification_type,
+    title,
+    message,
+):
+    """
+    Creates one notification for a patient.
+    Prevents duplicate notifications.
+    """
+
+    try:
+        print("====================================")
+        print("CREATING NOTIFICATION")
+        print("User ID:", user_id)
+        print("Appointment ID:", appointment_id)
+        print("Type:", notification_type)
+        print("Title:", title)
+        print("====================================")
+
+        # Check duplicate
+        if notification_already_exists(user_id, appointment_id, notification_type):
+            print("Notification already exists - skipping.")
+            return False
+
+        payload = {
+            "user_id": user_id,
+            "appointment_id": appointment_id,
+            "notification_type": notification_type,
+            "title": title,
+            "message": message,
+            "is_read": False,
+        }
+
+        print("Notification payload:", payload)
+
+        response = supabase.table("notification").insert(payload).execute()
+
+        print("Supabase notification response:", response.data)
+
+        if response.data:
+            print("✅ Notification created successfully!")
+            return True
+
+        print("❌ Notification insert returned no data.")
+        return False
+
+    except Exception as e:
+        print("❌ ERROR CREATING NOTIFICATION:")
+        print(e)
+        return False
+
+
+def send_appointment_reminders(now=None, tolerance_minutes=5):
+    """
+    Creates appointment reminders approximately 24 hours and 1 hour
+    before each upcoming appointment.
+
+    Run this function repeatedly, for example every 5 minutes.
+    The duplicate check ensures each reminder is only created once.
+
+    Returns the number of reminders created during this run.
+    """
+    if now is None:
+        now = datetime.now()
+
+    reminders_created = 0
+
+    try:
+        response = supabase.table("appointment").select("""
+                id,
+                user_id,
+                date_time,
+                appointment_type,
+                status,
+                therapist(name)
+                """).eq("status", "Upcoming").execute()
+
+        for appointment in response.data:
+            try:
+                appointment_dt = _parse_appointment_datetime(appointment.get("date_time"))
+            except (TypeError, ValueError):
+                continue
+
+            minutes_until = (appointment_dt - now).total_seconds() / 60
+
+            # Ignore appointments that have already started.
+            if minutes_until <= 0:
+                continue
+
+            therapist_name = _get_therapist_name(appointment)
+            formatted_date = _format_appointment_datetime(appointment.get("date_time"))
+
+            # 24-hour reminder
+            if abs(minutes_until - (24 * 60)) <= tolerance_minutes:
+                created = create_patient_notification(
+                    user_id=appointment["user_id"],
+                    appointment_id=appointment["id"],
+                    notification_type="appointment_reminder_24h",
+                    title="Appointment Reminder",
+                    message=(
+                        f"Reminder: You have an appointment with "
+                        f"{therapist_name} in 24 hours, on {formatted_date}."
+                    ),
+                )
+                if created:
+                    reminders_created += 1
+
+            # 1-hour reminder
+            if abs(minutes_until - 60) <= tolerance_minutes:
+                created = create_patient_notification(
+                    user_id=appointment["user_id"],
+                    appointment_id=appointment["id"],
+                    notification_type="appointment_reminder_1h",
+                    title="Appointment Reminder",
+                    message=(
+                        f"Reminder: You have an appointment with "
+                        f"{therapist_name} in 1 hour, at {formatted_date}."
+                    ),
+                )
+                if created:
+                    reminders_created += 1
+
+        return reminders_created
+
+    except Exception as e:
+        print(f"Error sending appointment reminders: {e}")
+        return 0
+
+
+def get_patient_notifications(user_id, unread_only=False):
+    """
+    Returns the patient's appointment notifications, newest first.
+    """
+    try:
+        query = supabase.table("notification").select("*").eq("user_id", user_id)
+
+        if unread_only:
+            query = query.eq("is_read", False)
+
+        response = query.order("created_at", desc=True).execute()
+        return response.data
+    except Exception as e:
+        print(f"Error retrieving patient notifications: {e}")
+        return []
+
+
+def mark_notification_as_read(notification_id, user_id):
+    """
+    Marks one notification as read.
+    user_id is included so a patient cannot update another patient's
+    notification accidentally.
+    """
+    try:
+        response = (
+            supabase.table("notification")
+            .update({"is_read": True})
+            .eq("id", notification_id)
+            .eq("user_id", user_id)
+            .execute()
+        )
+        return bool(response.data)
+    except Exception as e:
+        print(f"Error marking notification as read: {e}")
+        return False
+
+
+# ============================================================
+# COUNSELOR CONSULTATION NOTES
+# ============================================================
+
+
+def save_consultation_note(appointment_id, therapist_id, notes):
+    """
+    Creates or updates the counselor's consultation note for a completed
+    appointment.
+
+    The function checks that:
+    1. the appointment exists,
+    2. it belongs to the logged-in counselor,
+    3. the appointment has been completed,
+    4. the note is not empty.
+    """
+    cleaned_notes = (notes or "").strip()
+
+    if not cleaned_notes:
+        print("Consultation note cannot be empty.")
+        return False
+
+    try:
+        appointment_response = (
+            supabase.table("appointment")
+            .select("id, user_id, therapist_id, status")
+            .eq("id", appointment_id)
+            .execute()
+        )
+
+        if not appointment_response.data:
+            print("Appointment not found.")
+            return False
+
+        appointment = appointment_response.data[0]
+
+        if appointment.get("therapist_id") != therapist_id:
+            print("This appointment does not belong to this counselor.")
+            return False
+
+        if appointment.get("status", "").lower() != "completed":
+            print("Consultation notes can only be recorded after a completed session.")
+            return False
+
+        existing_response = (
+            supabase.table("consultation_note")
+            .select("id")
+            .eq("appointment_id", appointment_id)
+            .execute()
+        )
+
+        current_time = datetime.now().isoformat()
+
+        if existing_response.data:
+            note_id = existing_response.data[0]["id"]
+            response = (
+                supabase.table("consultation_note")
+                .update(
+                    {
+                        "notes": cleaned_notes,
+                        "updated_at": current_time,
+                    }
+                )
+                .eq("id", note_id)
+                .eq("therapist_id", therapist_id)
+                .execute()
+            )
+        else:
+            response = (
+                supabase.table("consultation_note")
+                .insert(
+                    {
+                        "appointment_id": appointment_id,
+                        "user_id": appointment["user_id"],
+                        "therapist_id": therapist_id,
+                        "notes": cleaned_notes,
+                        "created_at": current_time,
+                        "updated_at": current_time,
+                    }
+                )
+                .execute()
+            )
+
+        return bool(response.data)
+
+    except Exception as e:
+        print(f"Error saving consultation note: {e}")
+        return False
+
+
+def get_consultation_note(appointment_id, therapist_id):
+    """
+    Retrieves a consultation note for the counselor who owns the session.
+    """
+    try:
+        response = (
+            supabase.table("consultation_note")
+            .select("*")
+            .eq("appointment_id", appointment_id)
+            .eq("therapist_id", therapist_id)
+            .execute()
+        )
+
+        if response.data:
+            return response.data[0]
+
+        return None
+    except Exception as e:
+        print(f"Error retrieving consultation note: {e}")
+        return None
+
+
+# ============================================================
+# PATIENT CONSULTATION HISTORY
+# ============================================================
+
+
+def get_consultation_history(user_id):
+    """
+    Returns all completed counseling sessions for a patient,
+    including consultation notes, ordered from newest to oldest.
+    """
+    try:
+        response = (
+            supabase.table("appointment")
+            .select("""
+                id,
+                date_time,
+                appointment_type,
+                status,
+                therapist(id, name, specialization),
+                consultation_note(
+                    id,
+                    notes,
+                    created_at,
+                    updated_at
+                )
+                """)
+            .eq("user_id", user_id)
+            .eq("status", "Completed")
+            .order("date_time", desc=True)
+            .execute()
+        )
+
+        history = response.data
+
+        for appointment in history:
+            appointment["formatted_date"] = _format_appointment_datetime(
+                appointment.get("date_time")
+            )
+
+            # Supabase nested relation may return a list
+            note_data = appointment.get("consultation_note", [])
+
+            if isinstance(note_data, list) and note_data:
+                appointment["consultation_notes"] = note_data[0].get("notes", "")
+            elif isinstance(note_data, dict):
+                appointment["consultation_notes"] = note_data.get("notes", "")
+            else:
+                appointment["consultation_notes"] = ""
+
+        return history
+
+    except Exception as e:
+        print(f"Error retrieving consultation history: {e}")
+        return []
