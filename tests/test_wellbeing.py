@@ -25,7 +25,7 @@ def mock_supabase():
         yield mock
 
 
-def test_get_mood_page_renders_successfully(client, mock_supabase):
+def test_acceptance_get_mood_page_renders_successfully(client, mock_supabase):
     """Test that GET /mood renders the mood logging page correctly."""
     execute_ret = (
         mock_supabase.table.return_value.select.return_value.eq.return_value.execute.return_value
@@ -46,7 +46,7 @@ def test_get_mood_page_renders_successfully(client, mock_supabase):
     assert b"Happy" in response.data
 
 
-def test_post_mood_success(client, mock_supabase):
+def test_acceptance_post_mood_success(client, mock_supabase):
     """Test submitting a new valid mood log entry."""
     mock_supabase.table.return_value.insert.return_value.execute.return_value.data = [{}]
 
@@ -61,7 +61,7 @@ def test_post_mood_success(client, mock_supabase):
     assert b"Success! Your mood entry" in response.data or b"success" in response.data.lower()
 
 
-def test_edit_mood_success(client, mock_supabase):
+def test_acceptance_edit_mood_success(client, mock_supabase):
     """Test updating an existing mood entry."""
     record_id = "123"
 
@@ -88,7 +88,7 @@ def test_edit_mood_success(client, mock_supabase):
     )
 
 
-def test_get_privacy_settings(client, mock_supabase):
+def test_acceptance_get_privacy_settings(client, mock_supabase):
     """Test retrieving current privacy sharing preference."""
     execute_ret = (
         mock_supabase.table.return_value.select.return_value.eq.return_value.single.return_value.execute.return_value
@@ -105,7 +105,7 @@ def test_get_privacy_settings(client, mock_supabase):
     assert json_data.get("share_records") is True
 
 
-def test_update_privacy_settings(client, mock_supabase):
+def test_acceptance_update_privacy_settings(client, mock_supabase):
     """Test toggling the privacy sharing setting."""
     mock_supabase.table.return_value.upsert.return_value.execute.return_value.data = [{}]
 
@@ -129,7 +129,7 @@ def test_update_privacy_settings(client, mock_supabase):
 # ==========================================
 
 
-def test_questionnaire_displays_active_questions(client, mock_supabase):
+def test_acceptance_questionnaire_displays_active_questions(client, mock_supabase):
     """Patient should see active questions retrieved from the database."""
 
     execute_ret = (
@@ -157,7 +157,7 @@ def test_questionnaire_displays_active_questions(client, mock_supabase):
     assert b"How well did you manage stress today?" in response.data
 
 
-def test_questionnaire_only_requests_active_questions(client, mock_supabase):
+def test_acceptance_questionnaire_only_requests_active_questions(client, mock_supabase):
     """The questionnaire should retrieve only active questions."""
 
     query = mock_supabase.table.return_value.select.return_value
@@ -168,7 +168,7 @@ def test_questionnaire_only_requests_active_questions(client, mock_supabase):
     query.eq.assert_called_with("is_active", True)
 
 
-def test_submit_questionnaire_success(client, mock_supabase):
+def test_acceptance_submit_questionnaire_success(client, mock_supabase):
     """Patient should be able to submit answers for database questions."""
 
     questions = [
@@ -207,7 +207,7 @@ def test_submit_questionnaire_success(client, mock_supabase):
     assert "/result" in response.headers["Location"]
 
 
-def test_submit_questionnaire_rejects_missing_answer(client, mock_supabase):
+def test_acceptance_submit_questionnaire_rejects_missing_answer(client, mock_supabase):
     """Patient must answer every active assessment question."""
 
     questions = [
@@ -245,7 +245,7 @@ def test_submit_questionnaire_rejects_missing_answer(client, mock_supabase):
 # ==========================================
 
 
-def test_assessment_history_displays_previous_records(client, mock_supabase):
+def test_acceptance_assessment_history_displays_previous_records(client, mock_supabase):
     """Patient should be able to review previous assessment records."""
 
     execute_ret = (
@@ -273,7 +273,7 @@ def test_assessment_history_displays_previous_records(client, mock_supabase):
     assert b"Score: 8" in response.data
 
 
-def test_assessment_history_displays_category(client, mock_supabase):
+def test_acceptance_assessment_history_displays_category(client, mock_supabase):
     """Assessment history should display wellbeing categories."""
 
     execute_ret = (
@@ -294,7 +294,7 @@ def test_assessment_history_displays_category(client, mock_supabase):
     assert b"Good" in response.data
 
 
-def test_assessment_history_filter(client, mock_supabase):
+def test_acceptance_assessment_history_filter(client, mock_supabase):
     """Patient should be able to filter assessment history by time period."""
 
     execute_ret = (

@@ -137,7 +137,7 @@ def questionnaire_db(monkeypatch):
 # ==========================================
 
 
-def test_admin_can_view_questionnaire(client, questionnaire_db):
+def test_acceptance_admin_can_view_questionnaire(client, questionnaire_db):
     response = client.get("/admin/questionnaire")
 
     assert response.status_code == 200
@@ -145,7 +145,7 @@ def test_admin_can_view_questionnaire(client, questionnaire_db):
     assert b"How well did you manage stress today?" in response.data
 
 
-def test_admin_can_add_question(client, questionnaire_db):
+def test_acceptance_admin_can_add_question(client, questionnaire_db):
     response = client.post(
         "/admin/questionnaire/add",
         data={
@@ -162,7 +162,7 @@ def test_admin_can_add_question(client, questionnaire_db):
     assert new_question["is_active"] is True
 
 
-def test_admin_can_edit_question(client, questionnaire_db):
+def test_acceptance_admin_can_edit_question(client, questionnaire_db):
     response = client.post(
         "/admin/questionnaire/edit/1",
         data={
@@ -178,14 +178,14 @@ def test_admin_can_edit_question(client, questionnaire_db):
     assert question["display_order"] == 1
 
 
-def test_admin_can_deactivate_question(client, questionnaire_db):
+def test_acceptance_admin_can_deactivate_question(client, questionnaire_db):
     response = client.post("/admin/questionnaire/toggle/1")
 
     assert response.status_code == 302
     assert questionnaire_db["assessment_questions"][0]["is_active"] is False
 
 
-def test_admin_cannot_deactivate_last_question(client, questionnaire_db):
+def test_acceptance_admin_cannot_deactivate_last_question(client, questionnaire_db):
     questionnaire_db["assessment_questions"] = [
         {
             "id": 1,
@@ -201,7 +201,7 @@ def test_admin_cannot_deactivate_last_question(client, questionnaire_db):
     assert questionnaire_db["assessment_questions"][0]["is_active"] is True
 
 
-def test_admin_can_update_scoring_rules(client, questionnaire_db):
+def test_acceptance_admin_can_update_scoring_rules(client, questionnaire_db):
     questionnaire_db["assessment_questions"] = [
         {
             "id": i,
@@ -227,7 +227,7 @@ def test_admin_can_update_scoring_rules(client, questionnaire_db):
     assert scoring["moderate_max"] == 9
 
 
-def test_admin_cannot_save_invalid_scoring(client, questionnaire_db):
+def test_acceptance_admin_cannot_save_invalid_scoring(client, questionnaire_db):
     response = client.post(
         "/admin/questionnaire/scoring",
         data={
@@ -243,7 +243,7 @@ def test_admin_cannot_save_invalid_scoring(client, questionnaire_db):
     assert scoring["moderate_max"] == 10
 
 
-def test_admin_cannot_add_empty_question(client, questionnaire_db):
+def test_acceptance_admin_cannot_add_empty_question(client, questionnaire_db):
     original_count = len(questionnaire_db["assessment_questions"])
 
     response = client.post(
@@ -263,7 +263,7 @@ def test_admin_cannot_add_empty_question(client, questionnaire_db):
 # ==========================================
 
 
-def test_admin_page_renders(client):
+def test_acceptance_admin_page_renders(client):
     """
     ACCEPTANCE TEST: The /admin route should load the admin dashboard HTML successfully.
     """
@@ -276,7 +276,7 @@ def test_admin_page_renders(client):
 # ==========================================
 
 
-def test_create_counselor_success(client):
+def test_acceptance_create_counselor_success(client):
     """
     ACCEPTANCE TEST: An admin should be able to create a new counselor account
     with a valid payload.
@@ -294,7 +294,7 @@ def test_create_counselor_success(client):
     assert "Activation email sent" in data["message"]
 
 
-def test_create_counselor_duplicate_email(client):
+def test_acceptance_create_counselor_duplicate_email(client):
     """
     ACCEPTANCE TEST: The system must block the creation of an account
     if the email is already in use to prevent data collision.
@@ -322,7 +322,7 @@ def test_create_counselor_duplicate_email(client):
 # ==========================================
 
 
-def test_create_counselor_missing_fields(client):
+def test_acceptance_create_counselor_missing_fields(client):
     """
     ACCEPTANCE TEST: The API must reject requests that are missing
     mandatory fields like 'email'.
@@ -336,7 +336,7 @@ def test_create_counselor_missing_fields(client):
     assert b"Name, email and role are required" in response.data
 
 
-def test_create_counselor_invalid_email(client):
+def test_acceptance_create_counselor_invalid_email(client):
     """
     ACCEPTANCE TEST: The API must validate email formatting before attempting
     to insert it into the database.
@@ -350,7 +350,7 @@ def test_create_counselor_invalid_email(client):
     assert b"Please enter a valid email address" in response.data
 
 
-def test_create_counselor_empty_payload(client):
+def test_acceptance_create_counselor_empty_payload(client):
     """
     ACCEPTANCE TEST: The API must gracefully handle requests with completely
     missing or empty JSON payloads.
@@ -361,7 +361,7 @@ def test_create_counselor_empty_payload(client):
     assert b"Name, email and role are required" in response.data
 
 
-def test_create_counselor_saves_to_fallback(client):
+def test_acceptance_create_counselor_saves_to_fallback(client):
     """
     ACCEPTANCE TEST: If the database is offline, the system should properly
     save the counselor to the fallback dictionary.
@@ -414,7 +414,7 @@ def valid_resource_form(**overrides):
     return payload
 
 
-def test_admin_can_create_educational_resource(client, admin_resource_service):
+def test_acceptance_admin_can_create_educational_resource(client, admin_resource_service):
     response = client.post("/admin/resources/create", data=valid_resource_form())
 
     assert response.status_code == 302
@@ -424,7 +424,7 @@ def test_admin_can_create_educational_resource(client, admin_resource_service):
     assert resources[0].category == "Anxiety"
 
 
-def test_admin_create_rejects_invalid_category(client, admin_resource_service):
+def test_acceptance_admin_create_rejects_invalid_category(client, admin_resource_service):
     response = client.post(
         "/admin/resources/create",
         data=valid_resource_form(category="Not A Real Category"),
@@ -434,7 +434,7 @@ def test_admin_create_rejects_invalid_category(client, admin_resource_service):
     assert admin_resource_service.browse_resources() == []
 
 
-def test_admin_can_update_resource_category(client, admin_resource_service):
+def test_acceptance_admin_can_update_resource_category(client, admin_resource_service):
     resource, _ = admin_resource_service.upload_resource(
         {
             "title": "Managing Anxiety",
@@ -458,7 +458,7 @@ def test_admin_can_update_resource_category(client, admin_resource_service):
     assert updated.title == "Mindful Coping"
 
 
-def test_admin_update_rejects_invalid_category(client, admin_resource_service):
+def test_acceptance_admin_update_rejects_invalid_category(client, admin_resource_service):
     resource, _ = admin_resource_service.upload_resource(
         {
             "title": "Managing Anxiety",
@@ -480,7 +480,7 @@ def test_admin_update_rejects_invalid_category(client, admin_resource_service):
     assert admin_resource_service.store.get_resource(resource.id).category == "Anxiety"
 
 
-def test_admin_can_delete_resource(client, admin_resource_service):
+def test_acceptance_admin_can_delete_resource(client, admin_resource_service):
     resource, _ = admin_resource_service.upload_resource(
         {
             "title": "Stress Guide",
@@ -499,7 +499,7 @@ def test_admin_can_delete_resource(client, admin_resource_service):
     assert admin_resource_service.store.get_resource(resource.id) is None
 
 
-def test_admin_rejects_invalid_resource_id(client, admin_resource_service):
+def test_acceptance_admin_rejects_invalid_resource_id(client, admin_resource_service):
     response = client.post(
         "/admin/resources/not-a-number/update",
         data=valid_resource_form(),
@@ -508,7 +508,7 @@ def test_admin_rejects_invalid_resource_id(client, admin_resource_service):
     assert response.status_code == 302
 
 
-def test_admin_resource_rating_summary_is_available(admin_resource_service):
+def test_acceptance_admin_resource_rating_summary_is_available(admin_resource_service):
     resource, _ = admin_resource_service.upload_resource(
         {
             "title": "Self-Care Guide",

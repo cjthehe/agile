@@ -259,7 +259,7 @@ def auth_client(client):
 # ==========================================
 
 
-def test_home_page_renders(client):
+def test_acceptance_home_page_renders(client):
     """
     ACCEPTANCE TEST:
     The public home page should load successfully.
@@ -275,7 +275,7 @@ def test_home_page_renders(client):
 # ==========================================
 
 
-def test_dashboard_access_with_session(
+def test_acceptance_dashboard_access_with_session(
     auth_client,
     monkeypatch,
 ):
@@ -332,7 +332,7 @@ def test_dashboard_access_with_session(
     assert response.status_code == 200
 
 
-def test_booking_page_loads_with_session(
+def test_acceptance_booking_page_loads_with_session(
     auth_client,
     monkeypatch,
 ):
@@ -386,7 +386,7 @@ def test_booking_page_loads_with_session(
 # ==========================================
 
 
-def test_cancel_appointment_redirects(
+def test_acceptance_cancel_appointment_redirects(
     auth_client,
     monkeypatch,
 ):
@@ -419,7 +419,7 @@ def test_cancel_appointment_redirects(
     assert "/dashboard" in response.location
 
 
-def test_manage_availability_post_redirects(
+def test_acceptance_manage_availability_post_redirects(
     auth_client,
     monkeypatch,
 ):
