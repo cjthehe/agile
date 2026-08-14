@@ -343,7 +343,16 @@ class EducationalResourceService:
                     .eq("patient_id", patient_key)
                     .execute()
                 )
-                return [int(row["resource_id"]) for row in (response.data or [])]
+                favorite_ids: List[int] = []
+
+                for row in response.data or []:
+                    if isinstance(row, dict):
+                        resource_id_value = row.get("resource_id")
+
+                        if resource_id_value is not None:
+                            favorite_ids.append(int(resource_id_value))
+
+                return favorite_ids
             except Exception as exc:
                 print("SUPABASE FAVORITE LOAD ERROR:", exc)
 
@@ -408,7 +417,14 @@ class EducationalResourceService:
                     .eq("resource_id", resource_id)
                     .execute()
                 )
-                values = [int(row["rating"]) for row in (response.data or [])]
+                values = []
+
+                for row in response.data or []:
+                    if isinstance(row, dict):
+                        rating_value = row.get("rating")
+
+                        if rating_value is not None:
+                            values.append(int(rating_value))
             except Exception as exc:
                 print("SUPABASE RATING LOAD ERROR:", exc)
         else:
