@@ -262,6 +262,41 @@
         font-style: italic;
     }
 
+    .history-recommendations {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 8px;
+    }
+
+    .history-filter {
+        margin-bottom: 20px;
+    }
+
+    .history-filter select {
+        width: 100%;
+        padding: 12px 14px;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        background: white;
+        color: var(--text-main);
+        font-family: inherit;
+    }
+
+    .assessment-chart-card {
+        background: #faf9f6;
+        border: 1px solid rgba(166, 161, 190, 0.25);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .assessment-chart-card h4 {
+        margin: 0 0 16px;
+        font-size: 1.1rem;
+        color: var(--text-main);
+    }
+
     .button-row-secondary { 
         display: flex; 
         justify-content: center; 
@@ -323,6 +358,8 @@
             max-width: 100%;
         }
     }
+
+    
 </style>
 
 <div class="wellbeing-page">
@@ -372,6 +409,46 @@
             <span>📋 Past Assessment History</span>
         </div>
 
+        <form method="GET"
+            action="{{ url_for('wellbeing.result') }}"
+            class="history-filter">
+
+            <select name="range"
+                onchange="this.form.submit()">
+
+                <option value="all"
+                    {% if selected_range == 'all' %}selected{% endif %}>
+                    All Time
+                </option>
+
+                <option value="7"
+                    {% if selected_range == '7' %}selected{% endif %}>
+                    Last 7 Days
+                </option>
+
+                <option value="30"
+                    {% if selected_range == '30' %}selected{% endif %}>
+                    Last 30 Days
+                </option>
+
+                <option value="90"
+                    {% if selected_range == '90' %}selected{% endif %}>
+                    Last 90 Days
+                </option>
+
+            </select>
+        </form>
+
+        <div class="assessment-chart-card">
+            <h4>Assessment Trend</h4>
+
+            {% if chart_data %}
+                <canvas id="assessmentTrendChart"></canvas>
+            {% else %}
+                <p>No assessment data available.</p>
+            {% endif %}
+        </div>
+
         <div class="history-list">
             {% for item in history %}
             <div class="history-item">
@@ -382,7 +459,27 @@
                     </div>
                     <span class="history-time">{{ item.datetime }}</span>
                 </div>
-                <div class="history-rec">“{{ item.recommendation }}”</div>
+                <div class="history-rec">
+                    “{{ item.recommendation }}”
+                </div>
+
+                {% if item.recommendations_list %}
+                <div class="history-recommendations">
+
+                    {% for rec in item.recommendations_list %}
+                        <div class="rec-card">
+                            <span class="rec-type-badge">
+                                {{ rec.type }}
+                            </span>
+
+                            <span class="rec-content">
+                                {{ rec.content }}
+                            </span>
+                        </div>
+                    {% endfor %}
+
+                </div>
+                {% endif %}
             </div>
             {% endfor %}
         </div>
@@ -393,4 +490,51 @@
         </div>
     </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script id="assessmentChartData"
+        type="application/json">
+    {{ chart_data | tojson }}
+</script>
+
+<script>
+    const chartData = JSON.parse(
+        document.getElementById(
+            'assessmentChartData'
+        ).textContent
+    );
+
+    if (chartData.length > 0) {
+        new Chart(
+            document.getElementById(
+                'assessmentTrendChart'
+            ),
+            {
+                type: 'line',
+                data: {
+                    labels: chartData.map(
+                        item => item.date
+                    ),
+                    datasets: [{
+                        label: 'Assessment Score',
+                        data: chartData.map(
+                            item => item.score
+                        ),
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 15
+                        }
+                    }
+                }
+            }
+        );
+    }
+</script>
 {% endblock %}

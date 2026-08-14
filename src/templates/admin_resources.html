@@ -3,243 +3,284 @@
 {% block content %}
 <style>
     :root {
-        --edu-pink-light: #FFDBDF;
-        --edu-pink-strong: #F791A9;
-        --edu-pink-dark: #B84C68;
-        --edu-text: #4F2C3A;
+        --edu-pink-50: #fff7f9;
+        --edu-pink-100: #ffedf1;
+        --edu-pink-200: #ffdbe3;
+        --edu-pink-400: #f791a9;
+        --edu-pink-600: #d85f7f;
+        --edu-pink-700: #b84c68;
+        --edu-ink: #422733;
+        --edu-border: #f1dce2;
     }
+    .admin-edu-shell { color: var(--edu-ink); }
+    .admin-edu-hero {
+        border: 1px solid var(--edu-border);
+        border-radius: 28px;
+        padding: 28px;
+        background: linear-gradient(135deg, #fff0f4, #fff 64%);
+        box-shadow: 0 15px 40px rgba(184, 76, 104, .08);
+    }
+    .admin-panel {
+        border: 1px solid var(--edu-border);
+        border-radius: 22px;
+        background: #fff;
+        box-shadow: 0 10px 28px rgba(68, 39, 50, .05);
+    }
+    .admin-panel .form-control, .admin-panel .form-select {
+        border-radius: 12px;
+        border-color: #ead7dd;
+        padding: .7rem .85rem;
+    }
+    .admin-panel .form-control:focus, .admin-panel .form-select:focus {
+        border-color: var(--edu-pink-400);
+        box-shadow: 0 0 0 .2rem rgba(247, 145, 169, .16);
+    }
+    .edu-primary {
+        border: 0;
+        background: var(--edu-pink-400);
+        color: white;
+        border-radius: 999px;
+        font-weight: 700;
+    }
+    .edu-primary:hover { background: var(--edu-pink-600); color: white; }
+    .edu-outline {
+        border: 1px solid var(--edu-border);
+        background: white;
+        color: var(--edu-pink-700);
+        border-radius: 999px;
+        font-weight: 650;
+    }
+    .resource-row {
+        border: 1px solid #f1e4e8;
+        border-radius: 18px;
+        padding: 18px;
+        background: #fff;
+        transition: box-shadow .18s ease, transform .18s ease;
+    }
+    .resource-row:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 24px rgba(68, 39, 50, .07);
+    }
+    .resource-thumb {
+        width: 86px;
+        height: 76px;
+        border-radius: 14px;
+        object-fit: cover;
+        background: var(--edu-pink-50);
+    }
+    .resource-thumb-placeholder {
+        width: 86px;
+        height: 76px;
+        border-radius: 14px;
+        display: grid;
+        place-items: center;
+        background: var(--edu-pink-50);
+        font-size: 1.8rem;
+    }
+    .edu-pill {
+        display: inline-flex;
+        border-radius: 999px;
+        padding: 5px 9px;
+        background: var(--edu-pink-50);
+        border: 1px solid var(--edu-pink-200);
+        color: var(--edu-pink-700);
+        font-size: .75rem;
+        font-weight: 650;
+    }
+    .edu-alert-success {
+        background: #eaf8ef;
+        color: #17643a;
+        border: 1px solid #bde8cc;
+    }
+    .edu-alert-danger {
+        background: #fff0f1;
+        color: #a12632;
+        border: 1px solid #f4c2c7;
+    }
+    .sticky-create { position: sticky; top: 88px; }
 </style>
 
-<div class="container py-4">
-
-    <div class="p-4 rounded-4 shadow-sm mb-4"
-         style="background: linear-gradient(135deg, var(--edu-pink-light) 0%, #fff 100%);
-                border: 1px solid #f7d9df;">
+<div class="container py-4 admin-edu-shell">
+    <section class="admin-edu-hero mb-4">
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
             <div>
-                <h1 class="h3 fw-bold mb-1" style="color: var(--edu-pink-dark);">
-                    Educational Resources Manager
-                </h1>
-                <p class="text-muted mb-0">
-                    Create, update, and remove educational resources from Supabase.
-                </p>
+                <span class="badge rounded-pill mb-2" style="background:#fff; color:var(--edu-pink-700); border:1px solid var(--edu-border);">Admin Workspace</span>
+                <h1 class="h2 fw-bold mb-1" style="color:var(--edu-pink-700);">Educational Resources Manager</h1>
+                <p class="text-muted mb-0">Create, organize, review ratings, and maintain patient learning resources.</p>
             </div>
-
-            <a href="{{ url_for('admin.admin_page') }}"
-               class="btn rounded-pill px-3"
-               style="background:white; color:var(--edu-pink-dark); border:1px solid #f3c5cf;">
-                Back to Admin
-            </a>
+            <a href="{{ url_for('admin.admin_page') }}" class="btn edu-outline px-4">← Back to Admin</a>
         </div>
-    </div>
+    </section>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             {% for category, message in messages %}
-                <div class="alert rounded-3 mb-4"
-                     style="background:#fff5f7; color:var(--edu-pink-dark); border:1px solid #f7d9df;">
-                    {{ message }}
+                <div class="alert {{ 'edu-alert-success' if category == 'success' else 'edu-alert-danger' }} rounded-4 mb-3" role="alert">
+                    <strong>{{ 'Success:' if category == 'success' else 'Error:' }}</strong> {{ message }}
                 </div>
             {% endfor %}
         {% endif %}
     {% endwith %}
 
     <div class="row g-4 align-items-start">
-
         <div class="col-lg-4">
-            <div class="card border-0 shadow-sm rounded-4" style="border-top:4px solid var(--edu-pink-strong);">
-                <div class="card-body">
-                    <h5 class="fw-bold mb-3" style="color:var(--edu-pink-dark);">
-                        Add a new resource
-                    </h5>
-
+            <div class="admin-panel sticky-create">
+                <div class="p-4 border-bottom" style="border-color:var(--edu-border)!important;">
+                    <h2 class="h5 fw-bold mb-1">Add a new resource</h2>
+                    <p class="text-muted small mb-0">Complete the information below to publish a resource.</p>
+                </div>
+                <div class="p-4">
                     <form method="post" action="{{ url_for('admin.create_resource') }}">
                         <div class="mb-3">
-                            <label class="form-label">Title</label>
-                            <input type="text" class="form-control" name="title" required>
+                            <label class="form-label fw-semibold">Title</label>
+                            <input type="text" class="form-control" name="title" placeholder="e.g. Managing Everyday Anxiety" required>
                         </div>
-
                         <div class="mb-3">
-                            <label class="form-label">Description</label>
-                            <textarea class="form-control" name="description" rows="3"></textarea>
+                            <label class="form-label fw-semibold">Description</label>
+                            <textarea class="form-control" name="description" rows="4" placeholder="Briefly explain what patients will learn..." required></textarea>
                         </div>
-
+                        <div class="row g-2 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Category</label>
+                                <select class="form-select" name="category" required>
+                                    <option value="">Select</option>
+                                    {% for category in categories %}<option value="{{ category }}">{{ category }}</option>{% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Type</label>
+                                <select class="form-select" name="type" required>
+                                    <option value="">Select</option>
+                                    {% for type in types %}<option value="{{ type }}">{{ type.replace('_',' ') | title }}</option>{% endfor %}
+                                </select>
+                            </div>
+                        </div>
                         <div class="mb-3">
-                            <label class="form-label">Category</label>
-                            <select class="form-select" name="category" required>
-                                <option value="">Select Category</option>
-                                {% for category in categories %}
-                                    <option value="{{ category }}">{{ category }}</option>
-                                {% endfor %}
-                            </select>
+                            <label class="form-label fw-semibold">Thumbnail URL</label>
+                            <input type="url" class="form-control" name="thumbnail_url" placeholder="https://...">
                         </div>
-
                         <div class="mb-3">
-                            <label class="form-label">Type</label>
-                            <select class="form-select" name="type" required>
-                                <option value="">Select Type</option>
-                                {% for type in types %}
-                                    <option value="{{ type }}">
-                                        {{ type.replace('_',' ') | title }}
-                                    </option>
-                                {% endfor %}
-                            </select>
+                            <label class="form-label fw-semibold">Content URL</label>
+                            <input type="url" class="form-control" name="content_url" placeholder="https://...">
                         </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Thumbnail URL</label>
-                            <input type="text" class="form-control" name="thumbnail_url">
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Tags</label>
+                            <input type="text" class="form-control" name="tags" placeholder="anxiety, coping, breathing">
+                            <div class="form-text">Separate tags using commas.</div>
                         </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Content URL</label>
-                            <input type="text" class="form-control" name="content_url">
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Tags</label>
-                            <input type="text" class="form-control" name="tags" placeholder="anxiety, coping">
-                        </div>
-
-                        <button class="btn rounded-pill w-100 fw-semibold"
-                                style="background:var(--edu-pink-strong); color:white;"
-                                type="submit">
-                            Save Resource
-                        </button>
+                        <button class="btn edu-primary w-100 py-2" type="submit">＋ Save Resource</button>
                     </form>
                 </div>
             </div>
         </div>
 
         <div class="col-lg-8">
-            <div class="card border-0 shadow-sm rounded-4">
-                <div class="card-body">
-                    <h5 class="fw-bold mb-3" style="color:var(--edu-pink-dark);">
-                        Existing resources
-                    </h5>
+            <div class="admin-panel p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h2 class="h5 fw-bold mb-1">Existing resources</h2>
+                        <p class="text-muted small mb-0">{{ resources|length }} resource{{ '' if resources|length == 1 else 's' }} currently available</p>
+                    </div>
+                </div>
 
-                    {% if resources %}
-                        <div class="list-group">
-                            {% for resource in resources %}
-                                <div class="list-group-item border-0 px-0 py-3">
-                                    <div class="d-flex justify-content-between align-items-start gap-3">
-                                        <div>
-                                            <h6 class="fw-bold mb-1">{{ resource.title }}</h6>
-                                            <p class="text-muted small mb-2">{{ resource.description }}</p>
+                {% if resources %}
+                    <div class="d-grid gap-3">
+                        {% for resource in resources %}
+                            {% set rating = rating_summaries.get(resource.id, {'average': 0, 'count': 0}) %}
+                            <div class="resource-row">
+                                <div class="d-flex gap-3 align-items-start">
+                                    {% if resource.thumbnail_url %}
+                                        <img src="{{ resource.thumbnail_url }}" class="resource-thumb" alt="{{ resource.title }}">
+                                    {% else %}
+                                        <div class="resource-thumb-placeholder">📚</div>
+                                    {% endif %}
 
-                                            <div class="d-flex flex-wrap gap-2">
-                                                <span class="badge rounded-pill"
-                                                      style="background:#fff0f3; color:var(--edu-pink-dark);">
-                                                    {{ resource.resource_type.replace('_',' ') | title }}
-                                                </span>
-                                                <span class="badge rounded-pill bg-light text-dark">
-                                                    {{ resource.category }}
-                                                </span>
+                                    <div class="flex-grow-1 min-w-0">
+                                        <div class="d-flex justify-content-between gap-3 flex-wrap">
+                                            <div>
+                                                <h3 class="h6 fw-bold mb-1">{{ resource.title }}</h3>
+                                                <p class="text-muted small mb-2">{{ resource.description }}</p>
+                                                <div class="d-flex flex-wrap gap-2 align-items-center">
+                                                    <span class="edu-pill">{{ resource.resource_type.replace('_',' ') | title }}</span>
+                                                    <span class="edu-pill">{{ resource.category }}</span>
+                                                    <span class="small text-muted">★ {{ '%.1f'|format(rating.average) }} · {{ rating.count }} rating{{ '' if rating.count == 1 else 's' }}</span>
+                                                </div>
+                                            </div>
+                                            <div class="d-flex gap-2 align-items-start">
+                                                <button class="btn edu-outline btn-sm px-3" type="button" data-bs-toggle="collapse" data-bs-target="#edit-{{ resource.id }}">Edit</button>
+                                                <form method="post" action="{{ url_for('admin.delete_resource', resource_id=resource.id) }}" onsubmit="return confirm('Delete this resource?');">
+                                                    <button class="btn btn-outline-danger btn-sm rounded-pill px-3" type="submit">Delete</button>
+                                                </form>
                                             </div>
                                         </div>
 
-                                        <div class="d-flex gap-2">
-                                            <button class="btn btn-outline-secondary btn-sm rounded-pill"
-                                                    type="button"
-                                                    data-bs-toggle="collapse"
-                                                    data-bs-target="#edit-{{ resource.id }}">
-                                                Edit
-                                            </button>
-
-                                            <form method="post"
-                                                  action="{{ url_for('admin.delete_resource', resource_id=resource.id) }}"
-                                                  onsubmit="return confirm('Delete this resource?');">
-                                                <button class="btn btn-outline-danger btn-sm rounded-pill" type="submit">
-                                                    Delete
-                                                </button>
-                                            </form>
-                                        </div>
+                                        {% if resource.tags %}
+                                            <div class="mt-2 d-flex flex-wrap gap-1">
+                                                {% for tag in resource.tags %}<span class="badge text-bg-light fw-normal">#{{ tag }}</span>{% endfor %}
+                                            </div>
+                                        {% endif %}
                                     </div>
+                                </div>
 
-                                    <div class="collapse mt-3" id="edit-{{ resource.id }}">
+                                <div class="collapse mt-3" id="edit-{{ resource.id }}">
+                                    <div class="p-3 rounded-4" style="background:var(--edu-pink-50); border:1px solid var(--edu-border);">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <strong>Edit resource</strong>
+                                            <span class="small text-muted">ID #{{ resource.id }}</span>
+                                        </div>
                                         <form method="post" action="{{ url_for('admin.update_resource', resource_id=resource.id) }}">
-                                            <div class="row g-2">
+                                            <div class="row g-3">
                                                 <div class="col-md-6">
-                                                    <input type="text"
-                                                           class="form-control form-control-sm"
-                                                           name="title"
-                                                           value="{{ resource.title }}"
-                                                           required>
+                                                    <label class="form-label small fw-semibold">Title</label>
+                                                    <input type="text" class="form-control" name="title" value="{{ resource.title }}" required>
                                                 </div>
-
                                                 <div class="col-md-6">
-                                                    <select class="form-select form-select-sm" name="category" required>
-                                                        {% for cat in categories %}
-                                                            <option value="{{ cat }}" {% if resource.category == cat %}selected{% endif %}>
-                                                                {{ cat }}
-                                                            </option>
-                                                        {% endfor %}
+                                                    <label class="form-label small fw-semibold">Category</label>
+                                                    <select class="form-select" name="category" required>
+                                                        {% for cat in categories %}<option value="{{ cat }}" {% if resource.category == cat %}selected{% endif %}>{{ cat }}</option>{% endfor %}
                                                     </select>
                                                 </div>
-
-                                                <div class="col-md-12 mt-2">
-                                                    <textarea class="form-control form-control-sm"
-                                                              name="description"
-                                                              rows="2"
-                                                              required>{{ resource.description }}</textarea>
+                                                <div class="col-12">
+                                                    <label class="form-label small fw-semibold">Description</label>
+                                                    <textarea class="form-control" name="description" rows="3" required>{{ resource.description }}</textarea>
                                                 </div>
-
-                                                <div class="col-md-6 mt-2">
-                                                    <select class="form-select form-select-sm" name="type" required>
-                                                        {% for type_option in types %}
-                                                            <option value="{{ type_option }}" {% if resource.resource_type == type_option %}selected{% endif %}>
-                                                                {{ type_option.replace('-', ' ') | title }}
-                                                            </option>
-                                                        {% endfor %}
+                                                <div class="col-md-6">
+                                                    <label class="form-label small fw-semibold">Type</label>
+                                                    <select class="form-select" name="type" required>
+                                                        {% for type_option in types %}<option value="{{ type_option }}" {% if resource.resource_type == type_option %}selected{% endif %}>{{ type_option.replace('_',' ') | title }}</option>{% endfor %}
                                                     </select>
                                                 </div>
-
-                                                <div class="col-md-6 mt-2">
-                                                    <input type="text"
-                                                           class="form-control form-control-sm"
-                                                           name="thumbnail_url"
-                                                           value="{{ resource.thumbnail_url }}">
+                                                <div class="col-md-6">
+                                                    <label class="form-label small fw-semibold">Tags</label>
+                                                    <input type="text" class="form-control" name="tags" value="{{ resource.tags | join(', ') if resource.tags else '' }}">
                                                 </div>
-
-                                                <div class="col-md-6 mt-2">
-                                                    <input type="text"
-                                                           class="form-control form-control-sm"
-                                                           name="content_url"
-                                                           value="{{ resource.content_url }}">
+                                                <div class="col-md-6">
+                                                    <label class="form-label small fw-semibold">Thumbnail URL</label>
+                                                    <input type="url" class="form-control" name="thumbnail_url" value="{{ resource.thumbnail_url }}">
                                                 </div>
-
-                                                <div class="col-md-6 mt-2">
-                                                    <input type="text"
-                                                        class="form-control form-control-sm"
-                                                        name="tags"
-                                                        value="{{ resource.tags | join(', ') if resource.tags else '' }}">
+                                                <div class="col-md-6">
+                                                    <label class="form-label small fw-semibold">Content URL</label>
+                                                    <input type="url" class="form-control" name="content_url" value="{{ resource.content_url }}">
                                                 </div>
-
-                                                <div class="col-12 mt-2">
-                                                    <button class="btn btn-sm rounded-pill fw-semibold"
-                                                            style="background:var(--edu-pink-strong); color:white;"
-                                                            type="submit">
-                                                        Save Changes
-                                                    </button>
+                                                <div class="col-12">
+                                                    <button class="btn edu-primary px-4" type="submit">Save Changes</button>
                                                 </div>
                                             </div>
                                         </form>
                                     </div>
-
                                 </div>
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        <div class="alert alert-light border rounded-3">
-                            No educational resources found yet.
-                        </div>
-                    {% endif %}
-
-                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-5 rounded-4" style="background:#fffafb; border:1px dashed #e9cbd4;">
+                        <div class="fs-1 mb-2">📖</div>
+                        <h3 class="h6 fw-bold">No educational resources yet</h3>
+                        <p class="text-muted small mb-0">Use the form on the left to create your first resource.</p>
+                    </div>
+                {% endif %}
             </div>
         </div>
-
     </div>
-
 </div>
 {% endblock %}
