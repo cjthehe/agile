@@ -104,36 +104,87 @@
         </div>
 
         <div class="tab-pane fade" id="history" role="tabpanel">
-            {% for apt in completed_appointments %}
-            <div class="card border-0 rounded-4 shadow-sm mb-3" style="border-left: 4px solid var(--color-lavender);">
-                <div class="card-body p-4">
-                    <div class="d-flex align-items-center gap-3 mb-3">
-                        <div class="rounded-circle d-flex align-items-center justify-content-center" 
-                             style="width: 40px; height: 40px; background-color: var(--color-lavender); color: white; font-weight: bold; font-size: 0.9rem;">
-                            {{ apt.user.username[0].upper() if apt.user else 'P' }}
-                        </div>
-                        <div>
-                            <h6 class="fw-bold mb-0" style="color: var(--color-lavender);">{{ apt.user.username if apt.user else 'Unknown' }}</h6>
-                            <small class="text-muted">Patient</small>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <small class="d-block text-muted mb-1">
-                            📅 {{ apt.formatted_date }}
-                        </small>
-                        <small class="d-block text-muted">
-                            ✔ {{ apt.appointment_type }}
-                        </small>
-                    </div>
+    {% for apt in completed_appointments %}
+
+    <div class="card border-0 rounded-4 shadow-sm mb-3"
+         style="border-left: 4px solid var(--color-lavender);">
+
+        <div class="card-body p-4">
+
+            <div class="d-flex align-items-center gap-3 mb-3">
+
+                <div class="rounded-circle d-flex align-items-center justify-content-center"
+                     style="
+                        width: 40px;
+                        height: 40px;
+                        background-color: var(--color-lavender);
+                        color: white;
+                        font-weight: bold;
+                        font-size: 0.9rem;
+                     ">
+
+                    {{ apt.user.username[0].upper() if apt.user else 'P' }}
+
                 </div>
+
+                <div>
+                    <h6 class="fw-bold mb-0"
+                        style="color: var(--color-lavender);">
+
+                        {{ apt.user.username if apt.user else 'Unknown' }}
+
+                    </h6>
+
+                    <small class="text-muted">
+                        Patient
+                    </small>
+                </div>
+
             </div>
-            {% else %}
-            <div class="text-center text-muted py-5">
-                <p>No completed sessions in the last 30 days.</p>
+
+
+            <div class="mb-3">
+
+                <small class="d-block text-muted mb-1">
+                    📅 {{ apt.formatted_date }}
+                </small>
+
+                <small class="d-block text-muted">
+                    ✔ {{ apt.appointment_type }}
+                </small>
+
             </div>
-            {% endfor %}
+
+
+            <!-- CONSULTATION NOTES BUTTON -->
+            <div class="d-flex gap-2">
+
+                <button
+    type="button"
+    class="btn btn-sm rounded-pill fw-bold"
+    style="background-color: var(--color-matcha); color: white;"
+    data-appointment-id="{{ apt.id }}"
+    data-patient-name="{{ apt.user.username if apt.user else 'Patient' }}"
+    onclick="prepareNoteModal(this)"
+>
+    <i class="bi bi-journal-text me-1"></i>
+    Add / Edit Notes
+</button>
+
+            </div>
+
         </div>
+
+    </div>
+
+    {% else %}
+
+    <div class="text-center text-muted py-5">
+        <p>No completed sessions in the last 30 days.</p>
+    </div>
+
+    {% endfor %}
+</div>
         
     </div>
 </div>
@@ -161,6 +212,274 @@
         </div>
     </div>
 </div>
+
+<!-- CONSULTATION NOTES MODAL -->
+<!-- CONSULTATION NOTES MODAL -->
+<div
+    class="modal fade"
+    id="consultationNoteModal"
+    tabindex="-1"
+    aria-hidden="true"
+>
+    <div class="modal-dialog modal-dialog-centered">
+
+        <div
+            class="modal-content rounded-4 border-0 shadow"
+            style="border-top: 4px solid var(--color-matcha);"
+        >
+
+            <form
+                id="consultationNoteForm"
+                method="POST"
+                action=""
+            >
+
+                <!-- HEADER -->
+                <div class="modal-header border-0">
+
+                    <div>
+
+                        <h5
+                            id="consultationNoteTitle"
+                            class="modal-title fw-bold"
+                            style="color: var(--color-matcha);"
+                        >
+                            Consultation Notes
+                        </h5>
+
+                        <small class="text-muted">
+                            Patient:
+                            <span
+                                id="notePatientName"
+                                class="fw-bold"
+                            ></span>
+                        </small>
+
+                    </div>
+
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                    ></button>
+
+                </div>
+
+
+                <!-- BODY -->
+                <div class="modal-body p-4">
+
+                    <p
+                        id="noteDescription"
+                        class="text-muted small mb-3"
+                    >
+                        Record important information from the completed
+                        consultation for future reference.
+                    </p>
+
+
+                    <!-- LOADING -->
+                    <div
+                        id="noteLoading"
+                        class="text-center py-3 d-none"
+                    >
+                        <div
+                            class="spinner-border spinner-border-sm"
+                            style="color: var(--color-matcha);"
+                        ></div>
+
+                        <small class="text-muted ms-2">
+                            Loading notes...
+                        </small>
+                    </div>
+
+
+                    <!-- TEXTAREA -->
+                    <div
+                        id="noteInputContainer"
+                        class="mb-3"
+                    >
+
+                        <label
+                            for="consultationNotes"
+                            class="form-label fw-bold"
+                            style="color: var(--color-lavender);"
+                        >
+                            Session Notes
+                        </label>
+
+                        <textarea
+                            class="form-control rounded-3"
+                            id="consultationNotes"
+                            name="notes"
+                            rows="6"
+                            placeholder="Enter consultation notes..."
+                            required
+                            style="border-color: var(--color-mint);"
+                        ></textarea>
+
+                    </div>
+
+                </div>
+
+
+                <!-- FOOTER -->
+                <div class="modal-footer border-0">
+
+                    <button
+                        type="button"
+                        class="btn btn-light rounded-pill px-4 fw-bold"
+                        data-bs-dismiss="modal"
+                    >
+                        Cancel
+                    </button>
+
+                    <button
+                        type="submit"
+                        id="saveNoteButton"
+                        class="btn rounded-pill px-4 fw-bold text-white"
+                        style="background-color: var(--color-matcha);"
+                    >
+                        <i class="bi bi-save me-1"></i>
+                        Save Notes
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+</div>
+
+<script>
+    async function prepareNoteModal(button) {
+
+        // Get appointment information from the button
+        const appointmentId = button.dataset.appointmentId;
+        const patientName = button.dataset.patientName;
+
+        // Get HTML elements
+        const form =
+            document.getElementById('consultationNoteForm');
+
+        const patientNameElement =
+            document.getElementById('notePatientName');
+
+        const textarea =
+            document.getElementById('consultationNotes');
+
+        const title =
+            document.getElementById('consultationNoteTitle');
+
+        const saveButton =
+            document.getElementById('saveNoteButton');
+
+        const loading =
+            document.getElementById('noteLoading');
+
+        const inputContainer =
+            document.getElementById('noteInputContainer');
+
+
+        // Set form POST destination
+        form.action =
+            '/consultation-note/' + appointmentId;
+
+
+        // Show patient name
+        patientNameElement.innerText = patientName;
+
+
+        // Reset modal first
+        textarea.value = '';
+
+        title.innerText =
+            'Consultation Notes';
+
+        saveButton.innerHTML =
+            '<i class="bi bi-save me-1"></i> Save Notes';
+
+
+        // Show loading
+        loading.classList.remove('d-none');
+
+        inputContainer.classList.add('d-none');
+
+
+        // Open modal
+        const modalElement =
+            document.getElementById(
+                'consultationNoteModal'
+            );
+
+        const modal =
+            new bootstrap.Modal(modalElement);
+
+        modal.show();
+
+
+        try {
+
+            // Fetch existing note
+            const response = await fetch(
+                '/consultation-note/' + appointmentId
+            );
+
+            const data = await response.json();
+
+
+            // Existing notes found
+            if (data.exists) {
+
+                textarea.value = data.notes;
+
+                title.innerText =
+                    'Edit Consultation Notes';
+
+                saveButton.innerHTML =
+                    '<i class="bi bi-pencil-square me-1"></i> Update Notes';
+
+            }
+
+            // No notes yet
+            else {
+
+                textarea.value = '';
+
+                title.innerText =
+                    'Add Consultation Notes';
+
+                saveButton.innerHTML =
+                    '<i class="bi bi-save me-1"></i> Save Notes';
+
+            }
+
+        }
+
+        catch (error) {
+
+            console.error(
+                'Error loading consultation notes:',
+                error
+            );
+
+            textarea.value = '';
+
+        }
+
+        finally {
+
+            // Hide loading
+            loading.classList.add('d-none');
+
+            // Show textarea
+            inputContainer.classList.remove('d-none');
+
+        }
+    }
+</script>
 
 <script>
     async function viewPatientInfo(patientId, patientName) {
@@ -285,9 +604,11 @@
 <script>
     function prepareCancelModal(appointmentId) {
         const form = document.getElementById('cancelForm');
-        form.action = '/cancel/' + appointmentId; 
+
+        form.action = '/cancel-appointment/' + appointmentId;
+
         document.getElementById('cancelReason').value = '';
-        
+
         const modalElement = document.getElementById('cancelModal');
         const modalInstance = new bootstrap.Modal(modalElement);
         modalInstance.show();

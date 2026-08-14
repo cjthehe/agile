@@ -141,10 +141,14 @@ document.addEventListener("DOMContentLoaded", function() {
                         todaySlots.forEach(slot => {
                             const btnHtml = `
                                 <div class="col-6">
-                                    <div class="btn btn-outline-primary w-100 rounded-pill p-2 fw-medium" style="cursor: pointer; font-size: 0.85rem;" onclick="selectSlot('${dateStr}', '${slot}')">
+                                    <div
+                                        class="btn btn-outline-primary w-100 rounded-pill p-2 fw-medium"
+                                        style="font-size: 0.85rem;"
+                                    >
                                         ${slot}
                                     </div>
-                                </div>`;
+                                </div>
+                            `;
                             slotsContainer.insertAdjacentHTML('beforeend', btnHtml);
                         });
                     } else {
