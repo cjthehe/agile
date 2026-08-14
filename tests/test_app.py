@@ -139,7 +139,9 @@ def test_manage_availability_post_redirects(auth_client, monkeypatch):
     """
     import app
 
-    monkeypatch.setattr(app, "add_counselor_availability", lambda tid, day, start, end: True)
+    monkeypatch.setattr(
+        app, "add_counselor_availability", lambda tid, day, start, end, s_date, e_date: True
+    )
 
     response = auth_client.post(
         "/manage-availability", data={"day": "Monday", "start_time": "09:00", "end_time": "17:00"}

@@ -91,7 +91,10 @@ class EducationalResourceStore:
         self.storage_path = storage_path or DEFAULT_STORAGE_PATH
         self.storage_path.parent.mkdir(parents=True, exist_ok=True)
         self._resources: Dict[Any, EducationalResource] = {}
-        self._use_supabase = supabase is not None
+        # When a custom storage_path is provided (typically in tests), prefer file storage
+        # to avoid loading real Supabase data. Only use Supabase when no custom path
+        # is passed and a supabase client is available.
+        self._use_supabase = supabase is not None and storage_path is None
         self._load()
 
     def _load(self) -> None:
