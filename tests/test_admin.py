@@ -2,8 +2,10 @@ import uuid
 
 import pytest
 
+import admin as admin_module
 from admin import fallback_counselors
 from app import app
+from educational_resources import EducationalResourceService, EducationalResourceStore
 
 # ==========================================
 # FIXTURES (Setup/Teardown)
@@ -375,3 +377,152 @@ def test_create_counselor_saves_to_fallback(client):
     assert email in fallback_counselors
     assert fallback_counselors[email]["name"] == "Fallback Counselor"
     assert fallback_counselors[email]["user_role"] == "senior_counselor"
+
+
+# ==========================================
+# ACCEPTANCE TESTS: EDUCATIONAL RESOURCES
+# ==========================================
+
+
+@pytest.fixture
+def admin_resource_service(monkeypatch, tmp_path):
+    store = EducationalResourceStore(storage_path=tmp_path / "admin_resources.json")
+    service = EducationalResourceService(store=store)
+    monkeypatch.setattr(admin_module, "resource_service", service)
+    monkeypatch.setattr(
+        admin_module,
+        "_get_resource_options",
+        lambda: (
+            ["Stress", "Anxiety", "Depression", "Mindfulness", "Self-Care"],
+            ["article", "video", "self_help_guide"],
+        ),
+    )
+    return service
+
+
+def valid_resource_form(**overrides):
+    payload = {
+        "title": "Managing Anxiety",
+        "description": "A practical guide for patients.",
+        "category": "Anxiety",
+        "type": "article",
+        "thumbnail_url": "https://example.com/thumb.jpg",
+        "content_url": "https://example.com/guide",
+        "tags": "anxiety, coping",
+    }
+    payload.update(overrides)
+    return payload
+
+
+def test_admin_can_create_educational_resource(client, admin_resource_service):
+    response = client.post("/admin/resources/create", data=valid_resource_form())
+
+    assert response.status_code == 302
+    resources = admin_resource_service.browse_resources()
+    assert len(resources) == 1
+    assert resources[0].title == "Managing Anxiety"
+    assert resources[0].category == "Anxiety"
+
+
+def test_admin_create_rejects_invalid_category(client, admin_resource_service):
+    response = client.post(
+        "/admin/resources/create",
+        data=valid_resource_form(category="Not A Real Category"),
+    )
+
+    assert response.status_code == 302
+    assert admin_resource_service.browse_resources() == []
+
+
+def test_admin_can_update_resource_category(client, admin_resource_service):
+    resource, _ = admin_resource_service.upload_resource(
+        {
+            "title": "Managing Anxiety",
+            "description": "A practical guide for patients.",
+            "category": "Anxiety",
+            "resource_type": "article",
+            "thumbnail_url": "",
+            "content_url": "",
+            "tags": ["anxiety"],
+        }
+    )
+
+    response = client.post(
+        f"/admin/resources/{resource.id}/update",
+        data=valid_resource_form(category="Mindfulness", title="Mindful Coping"),
+    )
+
+    assert response.status_code == 302
+    updated = admin_resource_service.store.get_resource(resource.id)
+    assert updated.category == "Mindfulness"
+    assert updated.title == "Mindful Coping"
+
+
+def test_admin_update_rejects_invalid_category(client, admin_resource_service):
+    resource, _ = admin_resource_service.upload_resource(
+        {
+            "title": "Managing Anxiety",
+            "description": "A practical guide for patients.",
+            "category": "Anxiety",
+            "resource_type": "article",
+            "thumbnail_url": "",
+            "content_url": "",
+            "tags": [],
+        }
+    )
+
+    response = client.post(
+        f"/admin/resources/{resource.id}/update",
+        data=valid_resource_form(category="Invalid Category"),
+    )
+
+    assert response.status_code == 302
+    assert admin_resource_service.store.get_resource(resource.id).category == "Anxiety"
+
+
+def test_admin_can_delete_resource(client, admin_resource_service):
+    resource, _ = admin_resource_service.upload_resource(
+        {
+            "title": "Stress Guide",
+            "description": "Stress support.",
+            "category": "Stress",
+            "resource_type": "article",
+            "thumbnail_url": "",
+            "content_url": "",
+            "tags": [],
+        }
+    )
+
+    response = client.post(f"/admin/resources/{resource.id}/delete")
+
+    assert response.status_code == 302
+    assert admin_resource_service.store.get_resource(resource.id) is None
+
+
+def test_admin_rejects_invalid_resource_id(client, admin_resource_service):
+    response = client.post(
+        "/admin/resources/not-a-number/update",
+        data=valid_resource_form(),
+    )
+
+    assert response.status_code == 302
+
+
+def test_admin_resource_rating_summary_is_available(admin_resource_service):
+    resource, _ = admin_resource_service.upload_resource(
+        {
+            "title": "Self-Care Guide",
+            "description": "Daily self-care ideas.",
+            "category": "Self-Care",
+            "resource_type": "article",
+            "thumbnail_url": "",
+            "content_url": "",
+            "tags": [],
+        }
+    )
+    admin_resource_service.submit_rating("patient-1", resource.id, 5)
+    admin_resource_service.submit_rating("patient-2", resource.id, 4)
+
+    summary = admin_resource_service.get_rating_summary(resource.id)
+
+    assert summary == {"average": 4.5, "count": 2}
