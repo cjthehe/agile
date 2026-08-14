@@ -484,6 +484,7 @@ def mood_page():
 
             except Exception as e:
                 print(f"Error saving mood log: {e}")
+                error_msg = "An error occurred while saving your mood entry."
 
                 error_msg = "An error occurred while saving " "your mood entry."
 
@@ -1035,7 +1036,9 @@ def questionnaire():
 
             res = supabase.table("assessments").insert(payload).execute()
 
-            if res.data:
+            res = supabase.table("assessments").insert(payload).execute()
+
+            if res.data and len(res.data) > 0:
                 session["latest_assessment_id"] = res.data[0]["id"]
 
             return redirect(url_for("wellbeing.result", submitted="true"))

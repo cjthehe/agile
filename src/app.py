@@ -46,6 +46,8 @@ from educational_routes import educational as educational_blueprint
 from register import register as register_blueprint
 from wellbeing_tracking import wellbeing_bp
 
+educational_resources_service = EducationalResourceService()
+
 app = Flask(__name__)
 app.secret_key = "your_secret_key"  # Required for flash messages and sessions
 
@@ -72,6 +74,11 @@ app.register_blueprint(register_blueprint)
 app.register_blueprint(wellbeing_bp)
 app.register_blueprint(admin_blueprint)
 app.register_blueprint(educational_blueprint)
+
+
+# Helper Function to Validate File Extensions
+def allowed_file(filename):
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
 # Helper Function to Validate File Extensions

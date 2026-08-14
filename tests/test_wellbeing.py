@@ -123,11 +123,15 @@ def test_acceptance_update_privacy_settings(client, mock_supabase):
     assert json_data is not None
     assert json_data.get("success") is True or "share_records" in json_data
 
+    execute_mock = (
+        mock_supabase.table.return_value.select.return_value.eq.return_value.execute.return_value
+    )
 
 # ==========================================
 # SELF-ASSESSMENT QUESTIONNAIRE TESTS
 # ==========================================
 
+    response = client.get("/mood")
 
 def test_acceptance_questionnaire_displays_active_questions(client, mock_supabase):
     """Patient should see active questions retrieved from the database."""
@@ -156,6 +160,7 @@ def test_acceptance_questionnaire_displays_active_questions(client, mock_supabas
     assert b"How calm do you feel today?" in response.data
     assert b"How well did you manage stress today?" in response.data
 
+    response = client.post("/mood", data=payload, follow_redirects=True)
 
 def test_acceptance_questionnaire_only_requests_active_questions(client, mock_supabase):
     """The questionnaire should retrieve only active questions."""
@@ -239,11 +244,16 @@ def test_acceptance_submit_questionnaire_rejects_missing_answer(client, mock_sup
     assert response.status_code == 302
     assert "/questionnaire" in response.headers["Location"]
 
+# ==============================================================================
+# PRIVACY SETTINGS TESTS
+# ==============================================================================
 
 # ==========================================
 # SELF-ASSESSMENT HISTORY TESTS
 # ==========================================
 
+def test_get_privacy_settings(client, mock_supabase):
+    """Test retrieving current privacy sharing preference."""
 
 def test_acceptance_assessment_history_displays_previous_records(client, mock_supabase):
     """Patient should be able to review previous assessment records."""

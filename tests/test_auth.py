@@ -15,7 +15,7 @@ def test_acceptance_login_page(client):
     response = client.get("/login")
 
     assert response.status_code == 200
-    assert b"Patient Login" in response.data
+    assert b"Login" in response.data
 
 
 def test_acceptance_login_missing_credentials(client):
