@@ -16,8 +16,13 @@ try:
     from register import send_verification_email
 except Exception:
 
-    def send_verification_email(email: str, code: str, purpose: str = "verify") -> None:
+    def send_verification_email(
+        email: str,
+        code: str,
+        purpose: str = "verify",
+    ) -> bool:
         print(f"Verification code for {email}: {code}")
+        return True
 
 
 admin = Blueprint("admin", __name__)
