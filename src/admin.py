@@ -188,19 +188,30 @@ def create_counselor():
 
     if supabase is not None:
         try:
-            supabase.table("user").insert(
-                {
-                    "email": email,
-                    "password": None,
-                    "username": name,
-                    "user_role": role,
-                    "is_verified": False,
-                    "verification_code": activation_code,
-                }
-            ).execute()
+            response = (
+                supabase.table("user")
+                .insert(
+                    {
+                        "email": email,
+                        "password": None,
+                        "username": name,
+                        "user_role": role,
+                        "is_verified": False,
+                        "verification_code": activation_code,
+                    }
+                )
+                .execute()
+            )
 
-        except Exception:
-            pass
+            print("COUNSELOR INSERT RESPONSE:", response.data)
+
+        except Exception as e:
+            print("SUPABASE COUNSELOR CREATE ERROR:", e)
+
+            return (
+                jsonify({"message": "Unable to create counselor account in database."}),
+                500,
+            )
 
     # store in fallback for local runs
     fallback_counselors[email] = {
@@ -211,7 +222,24 @@ def create_counselor():
     }
 
     # notify counselor
-    send_verification_email(email, activation_code, purpose="counselor")
+    email_sent = send_verification_email(
+        email,
+        activation_code,
+        purpose="counselor",
+    )
+
+    if not email_sent:
+        return (
+            jsonify(
+                {
+                    "message": (
+                        "Counselor account created, but the activation " "email could not be sent."
+                    ),
+                    "email": email,
+                }
+            ),
+            201,
+        )
 
     return (
         jsonify(
