@@ -42,31 +42,75 @@ def send_email(email: str, subject: str, body: str) -> bool:
         return False
 
 
-def send_verification_email(email: str, code: str, purpose: str = "verify") -> None:
+def send_verification_email(
+    email: str,
+    code: str,
+    purpose: str = "verify",
+) -> bool:
+
+    # ============================================================
+    # COUNSELOR ACCOUNT ACTIVATION
+    # Send verification code + activation link
+    # ============================================================
     if purpose == "counselor":
-        subject = "Activate your counselor account"
-        body = (
-            "Hello,\n\n"
-            "You have been invited to join MindCare as a counselor.\n"
-            f"Verification code: {code}\n\n"
-            "Use the activation link sent to you to create your password."
-        )
-    else:
-        subject = "Verify your MindCare account"
         activation_url = url_for(
             "register.activate_account",
             email=email,
             code=code,
             _external=True,
         )
+
+        subject = "Activate your MindCare counselor account"
+
         body = (
             "Hello,\n\n"
-            f"Your MindCare verification code is: {code}\n\n"
-            f"Activation link:\n{activation_url}\n"
+            "You have been invited to join MindCare as a counselor.\n\n"
+            f"Your verification code is: {code}\n\n"
+            "Please click the activation link below to activate your account "
+            "and set your password:\n\n"
+            f"{activation_url}\n\n"
+            "If you did not expect this invitation, you may ignore this email."
         )
 
-    send_email(email, subject, body)
-    print(f"Verification message for {email}: {body}")
+    # ============================================================
+    # PASSWORD RESET
+    # Send reset verification code only
+    # ============================================================
+    elif purpose == "reset":
+        subject = "MindCare Password Reset Code"
+
+        body = (
+            "Hello,\n\n"
+            "You requested to reset your MindCare account password.\n\n"
+            f"Your password reset verification code is: {code}\n\n"
+            "Please enter this code in MindCare to continue resetting "
+            "your password.\n\n"
+            "If you did not request a password reset, you may ignore this email."
+        )
+
+    # ============================================================
+    # PATIENT REGISTRATION
+    # Send verification code only
+    # ============================================================
+    else:
+        subject = "Verify your MindCare account"
+
+        body = (
+            "Hello,\n\n"
+            "Thank you for registering with MindCare.\n\n"
+            f"Your verification code is: {code}\n\n"
+            "Please enter this verification code in the verification page "
+            "to activate your account."
+        )
+
+    sent = send_email(email, subject, body)
+
+    if sent:
+        print(f"Email sent successfully to {email}")
+    else:
+        print(f"Failed to send email to {email}")
+
+    return sent
 
 
 def is_strong_password(password: str) -> bool:
